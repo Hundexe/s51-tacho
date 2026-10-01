@@ -1,12 +1,17 @@
 name: Designer bauen und veröffentlichen
 
 # Baut S51-Designer.exe auf einem Windows-Rechner von GitHub.
-# Ein Release entsteht, wenn ein Tag der Form designer-v1.2.3 hochgeladen wird.
-# Von Hand starten (Actions → Designer bauen → Run workflow) baut nur die exe zum Herunterladen.
+# Ein Release entsteht, wenn auf main eine neue Versionsnummer in
+# designer/s51design/__init__.py steht und es dafür noch keinen Release gibt.
+# Die Versionshinweise kommen aus designer/release-notes/<Version>.md.
+# Von Hand starten geht auch: Actions → „Designer bauen und veröffentlichen“ → Run workflow.
 
 on:
   push:
-    tags: ["designer-v*"]
+    branches: [main]
+    paths:
+      - "designer/**"
+      - ".github/workflows/designer-release.yml"
   workflow_dispatch:
 
 permissions:
@@ -48,17 +53,28 @@ jobs:
         with:
           name: S51-Designer
           path: designer/dist/S51-Designer.exe
-      - name: Release anlegen
-        if: startsWith(github.ref, 'refs/tags/designer-v')
+      - name: Release anlegen, falls die Version neu ist
+        if: github.ref == 'refs/heads/main'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          VERSION="${GITHUB_REF_NAME#designer-v}"
-          gh release create "$GITHUB_REF_NAME" \
+          VERSION=$(python -c "import re;print(re.search(r'__version__ = \"(.+?)\"', open('designer/s51design/__init__.py').read()).group(1))")
+          TAG="designer-v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG gibt es schon, nichts zu tun."
+            exit 0
+          fi
+          NOTES="designer/release-notes/$VERSION.md"
+          if [ ! -f "$NOTES" ]; then
+            echo "Keine Versionshinweise $NOTES, kein Release."
+            exit 0
+          fi
+          gh release create "$TAG" \
             designer/dist/S51-Designer.exe \
             designer/beispiele/klar.s51 \
             designer/beispiele/tacho.cfg \
+            --target "$GITHUB_SHA" \
             --title "S51 Designer $VERSION" \
-            --notes-file "designer/release-notes/$VERSION.md" \
+            --notes-file "$NOTES" \
             --prerelease

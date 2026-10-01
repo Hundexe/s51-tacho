@@ -19,7 +19,7 @@ Unter Linux muss Tkinter eventuell nachinstalliert werden (`sudo apt install pyt
 
 Unter **Releases** auf der GitHub-Seite des Projekts liegt `S51-Designer.exe` zum Herunterladen. Sie läuft ohne installiertes Python. Die exe ist nicht signiert: Bei der Windows-Warnung auf „Weitere Informationen“ und „Trotzdem ausführen“ klicken.
 
-Die exe wird automatisch auf GitHub gebaut (`.github/workflows/designer-release.yml`), sobald ein Tag der Form `designer-v0.1.0` hochgeladen wird. Die Versionshinweise dafür liegen in `designer/release-notes/<Version>.md`.
+Die exe wird bei jeder Änderung im Ordner `designer/` automatisch auf GitHub gebaut (`.github/workflows/designer-release.yml`). Ein Release entsteht, wenn die Versionsnummer neu ist und es Versionshinweise in `designer/release-notes/<Version>.md` gibt.
 
 Selbst bauen: Doppelklick auf `designer/build_exe.bat`. Das lädt PyInstaller und baut `designer/dist/S51-Designer.exe`.
 
@@ -27,7 +27,7 @@ Selbst bauen: Doppelklick auf `designer/build_exe.bat`. Das lädt PyInstaller un
 
 1. Version in `designer/s51design/__init__.py` erhöhen.
 2. `designer/release-notes/<Version>.md` anlegen.
-3. Commit, dann Tag setzen und hochladen: `git tag designer-v<Version>` und `git push origin designer-v<Version>`.
+3. Commit auf `main` hochladen. GitHub baut die exe, legt den Tag `designer-v<Version>` an und veröffentlicht den Release.
 
 ## Bedienen
 
