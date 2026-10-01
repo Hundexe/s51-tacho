@@ -1,0 +1,44 @@
+name: Release-Tags angleichen
+
+# Setzt jeden Release-Tag auf den Commit in main, der genau denselben Inhalt hat.
+# Nötig, wenn die Historie von main umgeschrieben wurde (z. B. Commit-Nachrichten
+# geändert): Die Tags zeigen sonst weiter auf die alten Commits.
+# Von Hand starten: Actions → „Release-Tags angleichen“ → Run workflow.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/tags-angleichen.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  tags:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Tags auf Commits mit gleichem Inhalt setzen
+        run: |
+          git fetch --tags --force origin
+          for tag in $(git tag -l); do
+            old=$(git rev-parse "$tag^{commit}")
+            if git merge-base --is-ancestor "$old" origin/main; then
+              echo "$tag: schon in main"
+              continue
+            fi
+            tree=$(git rev-parse "$old^{tree}")
+            subject=$(git log -1 --format=%s "$old")
+            new=$(git log origin/main --format='%H %T %s' | awk -v t="$tree" -v s="$subject" '$2 == t { $1=$1; line=$0; sub(/^[^ ]+ [^ ]+ /, "", line); if (line == s) { print $1; exit } }' | cut -d' ' -f1)
+            if [ -z "$new" ]; then
+              echo "$tag: kein passender Commit gefunden"
+              continue
+            fi
+            echo "$tag: $old -> $new"
+            git tag -f "$tag" "$new"
+            git push -f origin "refs/tags/$tag"
+          done
