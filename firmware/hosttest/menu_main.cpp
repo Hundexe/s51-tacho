@@ -61,6 +61,8 @@ struct FakeHost : s51::MenuHost {
   int alarms = 0;
   bool transferIsOpen = false;
   s51::TransferInfo info;
+  s51::BluetoothInfo bt;
+  int playPresses = 0;
 
   std::string designName() override { return "Klar"; }
   float odometerKm() override { return odo; }
@@ -92,6 +94,15 @@ struct FakeHost : s51::MenuHost {
             {"tacho.cfg", "gelesen, 2 Hinweise"}, {"Speicher frei", "7.912 KB PSRAM, 182 KB RAM"},
             {"Starts", "7"},                 {"Laufzeit", "0:03 h"},
             {"Gerät", "WT32-SC01 Plus"}};
+  }
+  s51::BluetoothInfo bluetooth() override { return bt; }
+  void mediaPlayPause() override {
+    playPresses++;
+    bt.playing = !bt.playing;
+  }
+  void forgetBluetooth() override {
+    bt.bonded = 0;
+    bt.connected = false;
   }
   void transferOpen(bool open) override { transferIsOpen = open; }
   s51::TransferInfo transfer() override { return info; }
@@ -136,8 +147,6 @@ int main(int argc, char** argv) {
   // Hauptmenü
   m.open();
   CHECK(m.page() == s51::Menu::Page::Main);
-  m.draw(g, r, t);
-  writePpm(g, out + "/menue-haupt.ppm");
 
   // Wartung: Zündkerze ist fällig (1240 km bei 1000 km Abstand)
   tapAt(m, g, r, 240, 120, t);   // Kachel Wartung (Mitte oben)
@@ -154,10 +163,31 @@ int main(int argc, char** argv) {
   tapAt(m, g, r, 20, 20, t);     // zurück
   CHECK(m.page() == s51::Menu::Page::Main);
 
-  // Sperren ohne PIN geht nicht
-  tapAt(m, g, r, 400, 250, t);
+  // Bluetooth: verbunden mit iPhone, Musik steuern, Kopplungen vergessen
+  host.bt.enabled = true;
+  host.bt.name = "S51-Tacho";
+  host.bt.connected = true;
+  host.bt.device = "Mein iPhone";
+  host.bt.mediaInfo = true;
+  host.bt.track = "Schwalbenflug – Testband";
+  host.bt.playing = true;
+  host.bt.bonded = 1;
+  tapAt(m, g, r, 400, 250, t);    // Kachel Bluetooth (rechts unten)
+  CHECK(m.page() == s51::Menu::Page::Bluetooth);
+  m.draw(g, r, t);
+  writePpm(g, out + "/menue-bluetooth.ppm");
+  tapAt(m, g, r, 400, 58 + 62 + 28, t);        // „Pause“
+  CHECK(host.playPresses == 1);
+  tapAt(m, g, r, 400, 58 + 2 * 62 + 28, t);    // „Vergessen“
   CHECK(m.page() == s51::Menu::Page::Message);
   tapAt(m, g, r, 400, 290, t);
+  CHECK(host.bt.bonded == 0);
+  CHECK(m.page() == s51::Menu::Page::Bluetooth);
+  tapAt(m, g, r, 20, 20, t);
+  CHECK(m.page() == s51::Menu::Page::Main);
+  // Ohne PIN gibt es oben keinen Knopf „Sperren“
+  tapAt(m, g, r, 366, 24, t);
+  CHECK(m.page() == s51::Menu::Page::Main);
 
   // Alarm: PIN festlegen, erst falsch wiederholt, dann richtig
   tapAt(m, g, r, 400, 120, t);   // Kachel Alarm (rechts oben)
@@ -181,6 +211,18 @@ int main(int argc, char** argv) {
   CHECK(m.page() == s51::Menu::Page::Message);
   tapAt(m, g, r, 400, 290, t);   // Fertig
   CHECK(m.page() == s51::Menu::Page::Alarm);
+
+  // Mit PIN sperrt der Knopf oben im Hauptmenü sofort, ohne Zeitlimit
+  tapAt(m, g, r, 20, 20, t);
+  m.draw(g, r, t);
+  writePpm(g, out + "/menue-haupt.ppm");
+  tapAt(m, g, r, 366, 24, t);
+  CHECK(m.isLocked());
+  m.tick(t + 120000);
+  CHECK(!m.alarmActive());
+  CHECK(typePin(m, g, r, "1332", t + 120000) == s51::Menu::Request::Unlocked);
+  m.open();
+  tapAt(m, g, r, 400, 120, t);   // zurück ins Menü Alarm
 
   // Alarm aus- und wieder einschalten
   tapAt(m, g, r, 200, 58 + 28, t);

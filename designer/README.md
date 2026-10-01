@@ -46,8 +46,8 @@ Selbst bauen: Doppelklick auf `designer/build_exe.bat`. Das lädt PyInstaller un
 | Links oben | **Seiten** mit Miniaturbild. Antippen wechselt die Seite, ziehen ändert die Reihenfolge, „…“ kopiert, verschiebt oder löscht, „+“ legt eine neue Seite an |
 | Links unten | **Ebenen:** alle Elemente der Seite, das vorderste oben. Auge blendet am Tacho aus, Schloss sperrt gegen Verschieben |
 | Mitte | Das Display im Rahmen. Element anklicken und ziehen, die acht Anfasser ändern die Größe. Beim Ziehen erscheinen rote Hilfslinien an Kanten und Mitten anderer Elemente und des Displays |
-| Unten Mitte | **Elemente** zum Antippen oder auf das Display Ziehen: Text, Wert, Balken, Rundinstrument, Kontrollleuchte, Fläche/Linie, Bild. Daneben Zoom (Einpassen, 1×, 2×, 3×) und die Schalter Raster, Einrasten, Vorschau, Demo-Werte |
-| Rechts | **Eigenschaften** des gewählten Elements, nach Gruppen (Position und Größe, Daten, Text, Form, Farben, Warnschwellen). Ohne Auswahl: Seite, Layout und Bilder im Layout |
+| Unten Mitte | **Elemente** zum Antippen oder auf das Display Ziehen: Text, Wert, Balken, Rundinstrument, Kontrollleuchte, Fläche/Linie, Bild, Taste. Daneben Zoom (Einpassen, 1×, 2×, 3×) und die Schalter Raster, Einrasten, Vorschau, Demo-Werte |
+| Rechts | **Eigenschaften** des gewählten Elements, nach Gruppen (Position und Größe, Bedienung, Daten, Text, Form, Farben, Warnschwellen). Ohne Auswahl: Seite, Layout und Bilder im Layout |
 | Unten | Status und Dateigröße des Layouts (höchstens 1 MiB) |
 
 ![Eigenschaften eines Rundinstruments](../docs/bilder/designer/designer-schraeglage.png)
@@ -78,6 +78,11 @@ Weitere Hinweise:
 
 ### Bilder und Startbild
 
+- **Taste:** Fläche mit Symbol und/oder Text, die am Tacho beim Antippen eine Aktion auslöst: Abspielen/Pause, nächster oder voriger Titel, lauter, leiser, Seite vor oder zurück, Menü, Nachtmodus, Sperren, Trip zurücksetzen. Beim Wechsel der Aktion zieht das Symbol mit. Das Symbol „Abspielen/Pause“ zeigt am Tacho Pause, solange Musik läuft. Für Musik gibt es die Datenquellen Songtitel, Interpret, Album, Titel-Position, Titellänge, Titel-Fortschritt, Lautstärke, Name des Handys, Handy verbunden und Musik läuft.
+- **Lenkertaster** belegen: Tacho-Einstellungen → Lenkertaster, je Taster kurz und lang, mit denselben Aktionen.
+
+![Taste auf der Musikseite von „Klar“](../docs/bilder/designer/designer-taste.png)
+
 - **Bild laden** (Symbolleiste oder rechts in den Eigenschaften) liest alle Bildformate, die der Browser kennt: PNG, JPG, BMP, GIF, WebP. Ohne ausgewähltes Bild-Element entsteht ein neues Element in der Mitte. Bilder größer als das Display werden verkleinert. Ist ein Bild-Element ausgewählt, wird das neue Bild genau in dessen Rahmen eingepasst.
 - Ein Bild kann von mehreren Elementen benutzt werden. Auswahl im Feld „Bild“ des Elements. **Originalgröße** setzt den Rahmen auf die Größe des Bildes.
 - Der Tacho zeichnet Bilder immer in Originalgröße ab der linken oberen Ecke des Rahmens. Durchsichtige Stellen (PNG mit Alpha) bleiben durchsichtig.
@@ -93,12 +98,12 @@ Sechs Layouts sind eingebaut (Datei → Neues Design, oder Strg+N) und liegen au
 
 | Vorlage | Inhalt |
 |---|---|
-| **Klar** | Standard-Layout des Tachos: große Geschwindigkeit, Drehzahlbalken, Infozeile, Statistikseite, Nachtversion, Startbild mit Logo |
+| **Klar** | Standard-Layout des Tachos: große Geschwindigkeit, Drehzahlbalken, Infozeile, Statistikseite, Musikseite mit Tasten, Nachtversion, Startbild mit Logo |
 | **Retro** | Rundinstrument im Stil des alten Simson-Tachos mit Skala, Kilometerzähler und kleinem Drehzahlmesser |
 | **Rennsport** | Riesige Ganganzeige, segmentierter Drehzahlbalken mit rotem Bereich, Schaltblitz, Seite für die Schräglage |
 | **Cockpit** | Viele Werte in Kacheln, Drehzahl als Ring, dazu eine Musikseite mit Songtitel vom iPhone |
 | **Minimal** | Nur Geschwindigkeit, Uhrzeit, Blinker und Warnsymbol, mit gedimmter Nachtversion |
-| **Alle Elemente** | Eine Seite je Element-Typ: Schriften und Ausrichtung, Balkenarten, Rundinstrumente mit verschiedenen Winkeln, alle Symbole, Flächen und Linien, versteckte und gesperrte Elemente, Nachtversion, Bilder, Startbild |
+| **Alle Elemente** | Eine Seite je Element-Typ: Schriften und Ausrichtung, Balkenarten, Rundinstrumente mit verschiedenen Winkeln, alle Symbole, Tasten und Musik, Flächen und Linien, versteckte und gesperrte Elemente, Nachtversion, Bilder, Startbild |
 
 ![Klar](../docs/bilder/vorlage-klar.png)
 ![Retro](../docs/bilder/vorlage-retro.png)
@@ -195,7 +200,8 @@ Die Tests prüfen:
 - dass der erzeugte C++-Header zum Schema passt
 - dass die Doku alle Nummern und Schlüssel enthält
 - den Server der Oberfläche: Kennwort, Dateien, alle Anfragen, Übertragung gegen den simulierten Tacho
-- dass Oberfläche (JavaScript, braucht Node.js), Vorschau (Python) und Firmware (C++) Werte, Warnfarben, Balken und Kontrollleuchten gleich anzeigen
+- dass Oberfläche (JavaScript, braucht Node.js), Vorschau (Python) und Firmware (C++) Werte, Warnfarben, Balken, Kontrollleuchten und Tasten gleich anzeigen
+- dass die Firmware Musik und Uhrzeit vom iPhone richtig auswertet (`test_firmware_media.py`)
 - Schreiben auf die SD-Karte
 
 Was die Tests **nicht** abdecken: wie die Oberfläche aussieht und wie sie sich bedienen lässt. Dafür startet `tools/ui_screenshots.mjs` die Oberfläche in Chrome, klickt sich durch und macht Bildschirmfotos. Meldet die Seite dabei einen Fehler, schlägt es fehl. Auf GitHub: Actions → „Designer-Bildschirmfotos“ → Run workflow. Beim Bauen der exe prüft GitHub außerdem, dass die exe startet und Oberfläche und Schriften enthält.

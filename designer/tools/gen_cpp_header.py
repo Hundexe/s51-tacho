@@ -115,10 +115,16 @@ def gen_header():
         o.append(f"  {{Source::{camel(s_.key)}, SourceKind::{camel(s_.kind)}, "
                  f"{float(s_.demo_min)!r}f, {float(s_.demo_max)!r}f}},")
     o += ["};", "", f"constexpr size_t kSourceCount = {len(S.SOURCES)};", ""]
-    for name in ("icon", "font", "align", "orientation"):
+    for name in ("icon", "font", "align", "orientation", "action"):
         o.append(f"enum class {camel(name)} : uint8_t {{")
         o += [f"  {camel(k)} = {c},  // {lbl}" for c, k, lbl in S.ENUMS[name]]
         o += ["};", ""]
+    o.append("// Aktionen mit ihrem Namen in der tacho.cfg (Abschnitt [taster])")
+    o.append("struct ActionDef {\n  Action action;\n  const char* cfgKey;\n};")
+    o.append("")
+    o.append("constexpr ActionDef kActionDefs[] = {")
+    o += [f"  {{Action::{camel(a.key)}, {c_str(a.cfg)}}}," for a in S.ACTIONS]
+    o += ["};", ""]
     o.append("enum class Prop : uint8_t {")
     o += [f"  {camel(p.key)} = {p.code},  // {p.label} ({p.type})" for p in S.PROPS]
     o += ["};", ""]

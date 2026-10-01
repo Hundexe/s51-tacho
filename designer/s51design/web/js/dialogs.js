@@ -251,7 +251,7 @@ function showExportForm(dir, bytes, existing, cardValues) {
 // -- Tacho-Einstellungen ------------------------------------------------------------------
 
 const SECTION_TITLES = { fahrzeug: "Fahrzeug", anzeige: "Anzeige", warnungen: "Warnungen", wartung: "Wartung",
-  alarm: "Alarm", gps: "GPS", bluetooth: "Bluetooth", wlan: "WLAN" };
+  alarm: "Alarm", gps: "GPS", bluetooth: "Bluetooth", taster: "Lenkertaster", wlan: "WLAN" };
 
 export function configDialog() {
   const draft = { ...cfg.values };
@@ -270,7 +270,7 @@ export function configDialog() {
       return h("label", { class: "check" }, input, input.checked ? "" : "");
     }
     if (c.type === "enum") {
-      const sel = h("select", { class: "field" }, c.choices.map((ch) => h("option", { value: ch }, ch)));
+      const sel = h("select", { class: "field" }, c.choices.map((ch, i) => h("option", { value: ch }, (c.choice_labels || [])[i] || ch)));
       sel.value = v;
       sel.addEventListener("change", () => { draft[name] = sel.value; });
       return sel;

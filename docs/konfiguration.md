@@ -119,8 +119,25 @@ Abstände aus dem Handbuch des eigenen Fahrzeugs eintragen. Bestätigt wird eine
 
 | Schlüssel | Art | Standard | Bereich | Bedeutung |
 |---|---|---|---|---|
-| `aktiv` | Ja/Nein | ja | | Bluetooth für Musik und Uhrzeit vom iPhone |
+| `aktiv` | Ja/Nein | ja | | Bluetooth für Musiksteuerung (iPhone und Android), Titelanzeige und Uhrzeit (nur iPhone) |
 | `name` | Text | S51-Tacho | | Name, unter dem der Tacho am Handy erscheint |
+
+### [taster]
+
+Belegung der drei Lenkertaster. Kurz = loslassen vor 1 Sekunde, lang = mindestens 1 Sekunde gedrückt. Alle drei zusammen öffnen immer die PIN-Eingabe.
+
+| Schlüssel | Art | Standard | Bereich | Bedeutung |
+|---|---|---|---|---|
+| `taster1_kurz` | Auswahl | seite_vor | Aktionen unten | Taster 1 kurz |
+| `taster1_lang` | Auswahl | trip_zuruecksetzen | Aktionen unten | Taster 1 lang |
+| `taster2_kurz` | Auswahl | play_pause | Aktionen unten | Taster 2 kurz |
+| `taster2_lang` | Auswahl | keine | Aktionen unten | Taster 2 lang |
+| `taster3_kurz` | Auswahl | naechster_titel | Aktionen unten | Taster 3 kurz |
+| `taster3_lang` | Auswahl | voriger_titel | Aktionen unten | Taster 3 lang |
+
+**Aktionen:** `keine`, `play_pause`, `naechster_titel`, `voriger_titel`, `lauter`, `leiser`, `seite_vor`, `seite_zurueck`, `menue`, `nachtmodus`, `sperren`, `trip_zuruecksetzen`. Dieselben Aktionen gibt es für das Element „Taste“ im Layout ([dateiformat-layout.md](dateiformat-layout.md), Liste 4.5).
+
+Die Taster werden ab Phase 3 angeschlossen (MCP23017). Bis dahin gilt die Belegung schon, wird aber nicht benutzt.
 
 ### [wlan]
 

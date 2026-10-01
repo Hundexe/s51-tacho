@@ -32,11 +32,15 @@ def demo_values(t=None, animate=True):
     v["time"] = time.localtime()
     v["song_title"] = "Schwalbenflug"
     v["song_artist"] = "Testband"
+    v["song_album"] = "Mopedtour"
+    v["song_position"] = "1:23"
+    v["song_length"] = "3:41"
+    v["phone_name"] = "iPhone"
     blink = int(t * 2) % 2 == 0 if animate else True
     v.update({
         "blinker_left": blink, "blinker_right": False, "high_beam": True, "neutral": gear == 0,
         "light": True, "alarm_armed": False, "gps_fix": True, "bt_connected": True,
-        "shift_light": v["rpm"] > 6500, "warning": v["head_temp"] > 200,
+        "shift_light": v["rpm"] > 6500, "warning": v["head_temp"] > 200, "music_playing": True,
     })
     return v
 
@@ -127,6 +131,30 @@ def segment_lit(widget, value, i, n):
     f0 = fraction(widget, 0.0)
     end = (i + 1) / n if c >= f0 else i / n          # Ende des Segments, das weiter von 0 weg liegt
     return (b > a and a <= c <= b), abs(lo + (hi - lo) * end)
+
+
+def resolve_icon(icon, values):
+    """Symbol, das gezeichnet wird: play_pause wird zu pause, solange Musik läuft, sonst play."""
+    if icon == "play_pause":
+        return "pause" if values.get("music_playing") else "play"
+    return icon
+
+
+def button_boxes(widget):
+    """Rahmen für Symbol und Text einer Taste: (symbol, text), je (x, y, w, h) oder None."""
+    x, y, w, h = widget.x, widget.y, widget.w, widget.h
+    has_icon = widget.get("icon") != "none"
+    has_text = widget.get("text") != ""
+    m = min(w, h)
+    s = 0.55 * m
+    if has_icon and not has_text:
+        return (x + w / 2 - s / 2, y + h / 2 - s / 2, s, s), None
+    if has_text and not has_icon:
+        return None, (x, y, w, h)
+    if not has_icon:
+        return None, None
+    a = (m - s) / 2
+    return (x + a, y + h / 2 - s / 2, s, s), (x + s + 2 * a, y, w - s - 3 * a, h)
 
 
 def indicator_on(widget, values, t=None):

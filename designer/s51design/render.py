@@ -90,13 +90,40 @@ def draw_gauge(c, w, z, value):
                      outline=V.threshold_color(w, V.fill_value(w, value), w.get("color")), tags=TAG)
 
 
-def draw_icon(c, w, z, color):
-    icon = w.get("icon")
-    x0, y0, x1, y1 = w.x, w.y, w.x + w.w, w.y + w.h
+def draw_icon(c, icon, box, z, color):
+    """Zeichnet ein Symbol in den Rahmen box = (x, y, w, h)."""
+    x0, y0 = box[0], box[1]
+    x1, y1 = x0 + box[2], y0 + box[3]
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
-    s = min(w.w, w.h)
+    s = min(box[2], box[3])
     P = lambda pts: [p * z for p in pts]  # noqa: E731
-    if icon == "arrow_left":
+    R = lambda a, b, c_, d: _r(c, a, b, c_, d, z, fill=color, outline="")  # noqa: E731
+    if icon == "play":
+        c.create_polygon(P([cx - s * 0.22, cy - s * 0.32, cx - s * 0.22, cy + s * 0.32, cx + s * 0.32, cy]),
+                         fill=color, tags=TAG)
+    elif icon == "pause":
+        R(cx - s * 0.28, cy - s * 0.3, cx - s * 0.08, cy + s * 0.3)
+        R(cx + s * 0.08, cy - s * 0.3, cx + s * 0.28, cy + s * 0.3)
+    elif icon in ("next", "previous"):
+        d = 1 if icon == "next" else -1
+        h = s * 0.28
+        c.create_polygon(P([cx - d * s * 0.38, cy - h, cx - d * s * 0.38, cy + h, cx - d * s * 0.02, cy]),
+                         fill=color, tags=TAG)
+        c.create_polygon(P([cx - d * s * 0.02, cy - h, cx - d * s * 0.02, cy + h, cx + d * s * 0.32, cy]),
+                         fill=color, tags=TAG)
+        xa, xb = sorted((cx + d * s * 0.32, cx + d * s * 0.42))
+        R(xa, cy - h, xb, cy + h)
+    elif icon in ("volume_up", "volume_down"):
+        R(cx - s * 0.4, cy - s * 0.12, cx - s * 0.25, cy + s * 0.12)
+        c.create_polygon(P([cx - s * 0.25, cy - s * 0.12, cx - s * 0.05, cy - s * 0.3,
+                            cx - s * 0.05, cy + s * 0.3, cx - s * 0.25, cy + s * 0.12]), fill=color, tags=TAG)
+        R(cx + s * 0.08, cy - s * 0.04, cx + s * 0.4, cy + s * 0.04)
+        if icon == "volume_up":
+            R(cx + s * 0.2, cy - s * 0.16, cx + s * 0.28, cy + s * 0.16)
+    elif icon == "menu":
+        for k in (-1, 0, 1):
+            R(cx - s * 0.32, cy + k * s * 0.2 - s * 0.05, cx + s * 0.32, cy + k * s * 0.2 + s * 0.05)
+    elif icon == "arrow_left":
         c.create_polygon(P([x0, cy, cx, y0 + s * 0.1, cx, cy - s * 0.18, x1, cy - s * 0.18,
                             x1, cy + s * 0.18, cx, cy + s * 0.18, cx, y1 - s * 0.1]), fill=color, tags=TAG)
     elif icon == "arrow_right":
@@ -140,6 +167,38 @@ def draw_icon(c, w, z, color):
                       font=("Arial", -int(s * (0.4 if len(label) > 1 else 0.7) * z), "bold"), tags=TAG)
 
 
+def draw_plate(c, w, z, color):
+    """Fläche mit Eckenradius und innenliegendem Rahmen (Fläche und Taste)."""
+    bw, r = w.get("border_width"), w.get("radius")
+    if bw:
+        rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, r, z, fill=w.get("border_color"), outline="")
+        if w.w > 2 * bw and w.h > 2 * bw:
+            rounded_rect(c, w.x + bw, w.y + bw, w.x + w.w - bw, w.y + w.h - bw, max(0, r - bw), z,
+                         fill=color, outline="")
+    else:
+        rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, r, z, fill=color, outline="")
+
+
+class _Box:
+    """Rahmen mit den Eigenschaften eines Elements, für Text in einem Teil der Taste."""
+
+    def __init__(self, w, box):
+        self._w = w
+        self.x, self.y, self.w, self.h = box
+
+    def get(self, key):
+        return "center" if key == "align" else self._w.get(key)
+
+
+def draw_button(c, w, z, vals):
+    draw_plate(c, w, z, w.get("bg_color"))
+    icon_box, text_box = V.button_boxes(w)
+    if icon_box:
+        draw_icon(c, V.resolve_icon(w.get("icon"), vals), icon_box, z, w.get("color"))
+    if text_box:
+        draw_text(c, _Box(w, text_box), z, w.get("text"), w.get("color"), wrap=True)
+
+
 def draw_widget(c, w, z, vals, t=None, image_for=None):
     if w.type == "text":
         draw_text(c, w, z, w.get("text"), w.get("color"), wrap=True)
@@ -153,17 +212,12 @@ def draw_widget(c, w, z, vals, t=None, image_for=None):
         draw_gauge(c, w, z, vals.get(w.get("source")))
     elif w.type == "indicator":
         on = V.indicator_on(w, vals, t)
-        draw_icon(c, w, z, w.get("on_color") if on else w.get("off_color"))
+        draw_icon(c, V.resolve_icon(w.get("icon"), vals), (w.x, w.y, w.w, w.h), z,
+                  w.get("on_color") if on else w.get("off_color"))
+    elif w.type == "button":
+        draw_button(c, w, z, vals)
     elif w.type == "rect":
-        bw, r = w.get("border_width"), w.get("radius")
-        if bw:
-            # Rahmen liegt innerhalb der Fläche
-            rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, r, z, fill=w.get("border_color"), outline="")
-            if w.w > 2 * bw and w.h > 2 * bw:
-                rounded_rect(c, w.x + bw, w.y + bw, w.x + w.w - bw, w.y + w.h - bw, max(0, r - bw), z,
-                             fill=w.get("color"), outline="")
-        else:
-            rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, r, z, fill=w.get("color"), outline="")
+        draw_plate(c, w, z, w.get("color"))  # Rahmen liegt innerhalb der Fläche
     elif w.type == "image":
         img = image_for(w.get("image"), z) if image_for else None
         if img is not None:

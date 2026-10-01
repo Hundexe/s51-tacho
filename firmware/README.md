@@ -2,7 +2,7 @@
 
 PlatformIO-Projekt für das WT32-SC01 Plus (ESP32-S3, 16 MB Flash, 2 MB PSRAM). Pins: `include/pins.h`, Display-Treiber: `include/lgfx_sc01plus.h`.
 
-Aktueller Stand: **Phase 2**, der Tacho zeigt Layouts aus dem [S51 Designer](../designer/README.md) an und hat die fest eingebauten Menüs, den Sperrbildschirm mit PIN und die WLAN-Übertragung. Fast alle Werte sind noch Demo-Werte (wie in der Vorschau des Designers), Sensoren kommen ab Phase 3. Echt sind schon „Alarm scharf“ und „Kilometer bis Wartung“. Was davon auf dem Display getestet ist, steht in der Statustabelle der [README](../README.md).
+Aktueller Stand: **Phase 2**, der Tacho zeigt Layouts aus dem [S51 Designer](../designer/README.md) an und hat die fest eingebauten Menüs, den Sperrbildschirm mit PIN, die WLAN-Übertragung und Musik per Bluetooth. Fast alle Werte sind noch Demo-Werte (wie in der Vorschau des Designers), Sensoren kommen ab Phase 3. Echt sind schon „Alarm scharf“, „Kilometer bis Wartung“, alle Musik-Quellen, „Handy verbunden“ und die Uhrzeit vom iPhone. Was davon auf dem Display getestet ist, steht in der Statustabelle der [README](../README.md).
 
 ## Bedienung
 
@@ -17,6 +17,16 @@ Aktueller Stand: **Phase 2**, der Tacho zeigt Layouts aus dem [S51 Designer](../
 
 **Seite wechseln:** nach links oder rechts wischen oder auf das rechte bzw. linke Drittel tippen. Unten zeigen Punkte kurz, auf welcher Seite man ist.
 
+**Tasten im Layout:** Ein Element vom Typ „Taste“ löst beim Antippen seine Aktion aus (Musik, Seite, Menü, Nachtmodus, Sperren). Solange der Finger darauf liegt, ist die Taste heller. Ein Wischen, das auf einer Taste beginnt, wechselt trotzdem die Seite. Der mit einer Taste umgeschaltete Nachtmodus gilt bis zum Ausschalten. „Trip zurücksetzen“ meldet bis Phase 4 nur, dass die Tageskilometer mit GPS kommen.
+
+**Musik per Bluetooth**
+- Ist `[bluetooth] aktiv = ja` (Standard), ist der Tacho unter dem Namen aus `name` (Standard „S51-Tacho“) sichtbar. Am Handy unter Einstellungen → Bluetooth antippen und koppeln, ohne PIN. Danach verbindet sich das Handy bei jedem Start von selbst.
+- iPhone und Android: Abspielen/Pause, nächster und voriger Titel, lauter und leiser über die Tasten im Layout (später auch über die Lenkertaster).
+- Nur iPhone: Titel, Interpret, Album, Position, Länge und Lautstärke für die Anzeige, dazu die Uhrzeit. Die Befehle gehen beim iPhone direkt an die Musik-App, die gerade spielt.
+- Buchstaben, die die eingebauten Schriften nicht haben, werden ersetzt: Akzente fallen weg (é → e), Emojis entfallen, andere Schriften (z. B. Kyrillisch) erscheinen als „?“.
+- Menü → Bluetooth zeigt das verbundene Handy und den Titel, mit Knopf Abspielen/Pause zum Testen. „Vergessen“ löscht alle Kopplungen. Danach am Handy den alten Eintrag „S51-Tacho“ ebenfalls entfernen und neu koppeln.
+- Mit `aktiv = nein` bleibt Bluetooth ganz aus. Die Musik-Quellen sind dann leer.
+
 **Menü:** etwa eine Sekunde lang auf das Display drücken. Das × oben rechts schließt das Menü, der Pfeil oben links geht eine Seite zurück. Längere Listen lassen sich nach oben und unten wischen.
 
 ![Menü](../docs/bilder/firmware/menue-haupt.png)
@@ -24,11 +34,12 @@ Aktueller Stand: **Phase 2**, der Tacho zeigt Layouts aus dem [S51 Designer](../
 | Kachel | Inhalt |
 |---|---|
 | Design | Auswahl aller Designs, siehe unten |
+| Bluetooth | Verbundenes Handy, laufender Titel, gekoppelte Handys vergessen (siehe oben) |
 | Wartung | Kilometerstand und die Erinnerungen aus `[wartung]` der `tacho.cfg`. „Erledigt“ startet den Abstand beim jetzigen Kilometerstand neu. Ein roter Strich an der Kachel zeigt eine fällige Erinnerung |
 | Alarm | Bewegungsalarm scharf oder aus, Sicherheitsstufe (aus der `tacho.cfg`), PIN festlegen, ändern oder entfernen, NFC-Tag anlernen (folgt später), Protokoll |
 | Übertragung | WLAN für den Designer, siehe unten |
 | Einstellungen | Gänge anlernen (folgt mit GPS und Drehzahl), Hinweise zur `tacho.cfg` mit Zeilennummer, Angaben zu Firmware, Design und Speicher |
-| Sperren | Sperrbildschirm sofort zeigen, ohne Zeitlimit. Nur mit festgelegter PIN |
+| Knopf „Sperren“ oben | Sperrbildschirm sofort zeigen, ohne Zeitlimit. Erscheint nur mit festgelegter PIN |
 
 Der Kilometerstand zählt ab Phase 4 (GPS). Bis dahin steht er auf 0, Wartung und „Kilometer bis Wartung“ funktionieren aber schon.
 
@@ -108,6 +119,8 @@ Alle Versionen sind in `platformio.ini` fest gepinnt. GitHub baut die Firmware b
 |---|---|
 | `src/main.cpp` | Ablauf: SD-Karte, Konfiguration, Design wählen und laden, Startbild, Sperre, Seitenwechsel, Bedienung. Speichert PIN, Wartung, Protokoll und Auswahl, beantwortet Anfragen vom Designer |
 | `src/transfer.cpp` | WLAN (Hotspot oder Heimnetz) und HTTP-Gegenstelle nach [docs/uebertragung.md](../docs/uebertragung.md) |
+| `src/bluetooth.cpp` | Bluetooth LE mit NimBLE: Fernbedienung (HID), Apple Media Service, Uhrzeit vom iPhone |
+| `lib/s51media/` | Auswerten der Musik- und Uhrzeitdaten vom Handy, Anpassen der Texte an die Schriften |
 | `include/pins.h` | Alle Pins |
 | `include/lgfx_sc01plus.h` | Display- und Touch-Einstellungen für LovyanGFX |
 | `lib/s51layout/` | Decoder für Layout (`.s51`) und Konfiguration (`tacho.cfg`), Dateiname für empfangene Designs (`s51_filename`) |
@@ -127,6 +140,7 @@ Die Bibliotheken in `lib/` laufen auch am PC:
 - `hosttest/ui.sh <Zielordner>` zeichnet die Design-Auswahl mit allen Vorlagen als Designs.
 - `hosttest/menu.sh <Zielordner>` spielt die Menüs mit einem simulierten Tacho durch (PIN festlegen, sperren, 3 falsche PINs, Wartung bestätigen, Protokoll leeren, Übertragung öffnen) und zeichnet jede Seite. Endet mit Fehler, wenn ein Ablauf nicht stimmt. Bilder: [docs/bilder/firmware/](../docs/bilder/firmware/) (`menue-*.png`).
 - `designer/tests/test_firmware_render.py` prüft außerdem, dass ein per WLAN empfangenes Design denselben Dateinamen bekommt wie beim Export im Designer.
+- `designer/tests/test_firmware_media.py` spielt Nachrichten eines iPhones durch (Titel, Position, Pause, Uhrzeit über Mitternacht, Sonderzeichen) und prüft, was die Firmware daraus anzeigt (`hosttest/media_main.cpp`).
 - `hosttest/compare.py` zeichnet alle Vorlagen mit dem echten Renderer (LovyanGFX am PC, ohne Display) und stellt sie neben die Vorschau des Designers. Ergebnis: [docs/bilder/firmware/](../docs/bilder/firmware/). Braucht g++, git und Pillow:
 
 ```

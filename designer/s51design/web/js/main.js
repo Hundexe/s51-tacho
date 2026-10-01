@@ -12,7 +12,8 @@ import { initStage, layoutStage, render, setDemo, setPreview, setZoom, view } fr
 import { dropdown, h, initTooltips, showError, toast } from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
-const DOCK_LABEL = { text: "Text", value: "Wert", bar: "Balken", gauge: "Instrument", indicator: "Leuchte", rect: "Fläche", image: "Bild" };
+const DOCK_LABEL = { text: "Text", value: "Wert", bar: "Balken", gauge: "Instrument", indicator: "Leuchte", rect: "Fläche", image: "Bild",
+  button: "Taste" };
 
 function wrap(fn) {
   return (...a) => { try { const r = fn(...a); if (r && r.catch) r.catch(showError); } catch (e) { showError(e); } };

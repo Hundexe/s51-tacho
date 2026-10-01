@@ -62,15 +62,16 @@ void Renderer::setLayout(const LayoutData* layout) {
   layout_ = layout;
 }
 
-void Renderer::drawScreen(LGFX_Sprite& g, const ScreenData& screen, const Values& v, uint32_t ms) {
+void Renderer::drawScreen(LGFX_Sprite& g, const ScreenData& screen, const Values& v, uint32_t ms,
+                          const WidgetData* pressed) {
   g.fillScreen(c565(screen.bg));
   for (const auto& w : screen.widgets) {
     if (!w.known || w.hidden) continue;
-    drawWidget(g, w, v, ms);
+    drawWidget(g, w, v, ms, &w == pressed);
   }
 }
 
-void Renderer::drawWidget(LGFX_Sprite& g, const WidgetData& w, const Values& v, uint32_t ms) {
+void Renderer::drawWidget(LGFX_Sprite& g, const WidgetData& w, const Values& v, uint32_t ms, bool pressed) {
   switch (w.type) {
     case WidgetType::Text:
       drawText(g, w, w.text, w.color, true);
@@ -88,13 +89,16 @@ void Renderer::drawWidget(LGFX_Sprite& g, const WidgetData& w, const Values& v, 
       drawGauge(g, w, v);
       break;
     case WidgetType::Indicator:
-      drawIcon(g, w, indicatorOn(w, v, ms) ? w.onColor : w.offColor);
+      drawIcon(g, resolveIcon(w.icon, v), w.x, w.y, w.w, w.h, indicatorOn(w, v, ms) ? w.onColor : w.offColor);
       break;
     case WidgetType::Rect:
       drawRect(g, w);
       break;
     case WidgetType::Image:
       drawImage(g, w);
+      break;
+    case WidgetType::Button:
+      drawButton(g, w, v, pressed);
       break;
   }
 }
@@ -234,18 +238,48 @@ void Renderer::drawGauge(LGFX_Sprite& g, const WidgetData& w, const Values& v) {
 
 // -- Kontrollleuchten --------------------------------------------------------
 
-void Renderer::drawIcon(LGFX_Sprite& g, const WidgetData& w, Color color) {
+void Renderer::drawIcon(LGFX_Sprite& g, Icon icon, float bx, float by, float bw, float bh, Color color) {
   const uint16_t col = c565(color);
-  const float x0 = w.x, y0 = w.y, x1 = w.x + w.w, y1 = w.y + w.h;
+  const float x0 = bx, y0 = by, x1 = bx + bw, y1 = by + bh;
   const float cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-  const float s = std::min<float>(w.w, w.h);
+  const float s = std::min(bw, bh);
   auto tri = [&](float ax, float ay, float bx, float by, float qx, float qy) {
     g.fillTriangle(rnd(ax), rnd(ay), rnd(bx), rnd(by), rnd(qx), rnd(qy), col);
   };
   auto thickLine = [&](float ax, float ay, float bx, float by, float width) {
     g.drawWideLine(rnd(ax), rnd(ay), rnd(bx), rnd(by), std::max(0.5f, width / 2), c888(color));
   };
-  switch (w.icon) {
+  auto R = [&](float a, float b, float c, float d) { fillRectF(g, a, b, c, d, col); };
+  switch (icon) {
+    case Icon::Play:
+      tri(cx - s * 0.22f, cy - s * 0.32f, cx - s * 0.22f, cy + s * 0.32f, cx + s * 0.32f, cy);
+      break;
+    case Icon::Pause:
+      R(cx - s * 0.28f, cy - s * 0.3f, cx - s * 0.08f, cy + s * 0.3f);
+      R(cx + s * 0.08f, cy - s * 0.3f, cx + s * 0.28f, cy + s * 0.3f);
+      break;
+    case Icon::Next:
+    case Icon::Previous: {
+      const float d = icon == Icon::Next ? 1.0f : -1.0f, hh = s * 0.28f;
+      tri(cx - d * s * 0.38f, cy - hh, cx - d * s * 0.38f, cy + hh, cx - d * s * 0.02f, cy);
+      tri(cx - d * s * 0.02f, cy - hh, cx - d * s * 0.02f, cy + hh, cx + d * s * 0.32f, cy);
+      const float xa = cx + d * s * 0.32f, xb = cx + d * s * 0.42f;
+      R(std::min(xa, xb), cy - hh, std::max(xa, xb), cy + hh);
+      break;
+    }
+    case Icon::VolumeUp:
+    case Icon::VolumeDown:
+      R(cx - s * 0.4f, cy - s * 0.12f, cx - s * 0.25f, cy + s * 0.12f);
+      tri(cx - s * 0.25f, cy - s * 0.12f, cx - s * 0.05f, cy - s * 0.3f, cx - s * 0.05f, cy + s * 0.3f);
+      tri(cx - s * 0.25f, cy - s * 0.12f, cx - s * 0.05f, cy + s * 0.3f, cx - s * 0.25f, cy + s * 0.12f);
+      R(cx + s * 0.08f, cy - s * 0.04f, cx + s * 0.4f, cy + s * 0.04f);
+      if (icon == Icon::VolumeUp) R(cx + s * 0.2f, cy - s * 0.16f, cx + s * 0.28f, cy + s * 0.16f);
+      break;
+    case Icon::Menu:
+      for (int k = -1; k <= 1; k++) {
+        R(cx - s * 0.32f, cy + k * s * 0.2f - s * 0.05f, cx + s * 0.32f, cy + k * s * 0.2f + s * 0.05f);
+      }
+      break;
     case Icon::ArrowLeft:
       tri(x0, cy, cx, y0 + s * 0.1f, cx, y1 - s * 0.1f);
       fillRectF(g, cx - 1, cy - s * 0.18f, x1, cy + s * 0.18f, col);
@@ -265,7 +299,7 @@ void Renderer::drawIcon(LGFX_Sprite& g, const WidgetData& w, Color color) {
     }
     case Icon::Neutral:
       fillRoundRectF(g, x0 + 1, y0 + 1, x1 - 1, y1 - 1, s * 0.2f, col);
-      drawTextBox(g, "N", x0, y0, w.w, w.h, Font::SansBold, s * 0.7f, Color{0, 0, 0}, Align::Center, false, false);
+      drawTextBox(g, "N", x0, y0, bw, bh, Font::SansBold, s * 0.7f, Color{0, 0, 0}, Align::Center, false, false);
       break;
     case Icon::Light:
       g.fillSmoothCircle(rnd(cx), rnd(cy), rnd(s * 0.22f), col);
@@ -299,13 +333,13 @@ void Renderer::drawIcon(LGFX_Sprite& g, const WidgetData& w, Color color) {
                   Align::Center, false, false);
       break;
     case Icon::Gps:
-      drawTextBox(g, "GPS", x0, y0, w.w, w.h, Font::SansBold, s * 0.4f, color, Align::Center, false, false);
+      drawTextBox(g, "GPS", x0, y0, bw, bh, Font::SansBold, s * 0.4f, color, Align::Center, false, false);
       break;
     case Icon::Bluetooth:
-      drawTextBox(g, "BT", x0, y0, w.w, w.h, Font::SansBold, s * 0.4f, color, Align::Center, false, false);
+      drawTextBox(g, "BT", x0, y0, bw, bh, Font::SansBold, s * 0.4f, color, Align::Center, false, false);
       break;
     case Icon::Music:
-      drawTextBox(g, "\xE2\x99\xAA", x0, y0, w.w, w.h, Font::SansBold, s * 0.7f, color, Align::Center, false, false);
+      drawTextBox(g, "\xE2\x99\xAA", x0, y0, bw, bh, Font::SansBold, s * 0.7f, color, Align::Center, false, false);
       break;
     default:
       g.fillSmoothCircle(rnd(cx), rnd(cy), rnd(s * 0.2f), col);
@@ -315,18 +349,33 @@ void Renderer::drawIcon(LGFX_Sprite& g, const WidgetData& w, Color color) {
 
 // -- Fläche ------------------------------------------------------------------
 
-void Renderer::drawRect(LGFX_Sprite& g, const WidgetData& w) {
+// Fläche mit Eckenradius, der Rahmen liegt innerhalb (Fläche und Taste)
+void Renderer::drawPlate(LGFX_Sprite& g, const WidgetData& w, Color color) {
   float x0 = w.x, y0 = w.y, x1 = w.x + w.w, y1 = w.y + w.h;
   int bw = w.borderWidth;
   if (bw > 0) {
-    // Rahmen liegt innerhalb der Fläche
     fillRoundRectF(g, x0, y0, x1, y1, w.radius, c565(w.borderColor));
     if (w.w > 2 * bw && w.h > 2 * bw) {
-      fillRoundRectF(g, x0 + bw, y0 + bw, x1 - bw, y1 - bw, std::max(0, int(w.radius) - bw), c565(w.color));
+      fillRoundRectF(g, x0 + bw, y0 + bw, x1 - bw, y1 - bw, std::max(0, int(w.radius) - bw), c565(color));
     }
   } else {
-    fillRoundRectF(g, x0, y0, x1, y1, w.radius, c565(w.color));
+    fillRoundRectF(g, x0, y0, x1, y1, w.radius, c565(color));
   }
+}
+
+void Renderer::drawRect(LGFX_Sprite& g, const WidgetData& w) { drawPlate(g, w, w.color); }
+
+// -- Taste -------------------------------------------------------------------
+
+static Color lighter(Color c) {
+  return Color{uint8_t(c.r + (255 - c.r) / 4), uint8_t(c.g + (255 - c.g) / 4), uint8_t(c.b + (255 - c.b) / 4)};
+}
+
+void Renderer::drawButton(LGFX_Sprite& g, const WidgetData& w, const Values& v, bool pressed) {
+  drawPlate(g, w, pressed ? lighter(w.bgColor) : w.bgColor);
+  ButtonBoxes b = buttonBoxes(w);
+  if (b.hasIcon) drawIcon(g, resolveIcon(w.icon, v), b.ix, b.iy, b.is, b.is, w.color);
+  if (b.hasText && b.tw > 0) drawTextBox(g, w.text, b.tx, b.ty, b.tw, b.th, w.font, w.size, w.color, Align::Center, true, true);
 }
 
 // -- Bild --------------------------------------------------------------------

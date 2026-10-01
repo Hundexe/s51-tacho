@@ -65,7 +65,8 @@ def schema_info():
                           "size": list(t.default_size), "overrides": t.overrides} for t in S.WIDGET_TYPES],
         "enums": {k: [list(e) for e in v] for k, v in S.ENUMS.items()},
         "config": [{"section": c.section, "key": c.key, "type": c.type, "default": c.default,
-                    "description": c.description, "min": c.min, "max": c.max, "choices": list(c.choices)}
+                    "description": c.description, "min": c.min, "max": c.max, "choices": list(c.choices),
+                    "choice_labels": [S.ACTION_BY_CFG[ch].label if ch in S.ACTION_BY_CFG else ch for ch in c.choices]}
                    for c in S.CONFIG],
         "config_sections": list(S.CONFIG_SECTIONS),
         "presets": list(presets.PRESETS),

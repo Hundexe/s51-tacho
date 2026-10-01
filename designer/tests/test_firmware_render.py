@@ -78,6 +78,11 @@ def py_lines(layout):
                     text = "-" + marks
             elif w.type == "indicator":
                 on = 1 if V.indicator_on(w, vals, t=0.1) else 0
+            elif w.type == "button":
+                ib, tb = V.button_boxes(w)
+                code = S.enum_code("icon", V.resolve_icon(w.get("icon"), vals))
+                text = (f"{code}:{ib[0] if ib else -1:.1f},{ib[1] if ib else -1:.1f},{ib[2] if ib else -1:.1f}:"
+                        f"{tb[0] if tb else -1:.1f},{tb[2] if tb else -1:.1f}")
             out.append(f"{s.id}|{i}|{text}|{col.upper() if col != '-' else col}|{frac[0]:.3f}-{frac[1]:.3f}|{on}")
     return out
 

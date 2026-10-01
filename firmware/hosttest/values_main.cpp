@@ -61,6 +61,16 @@ int main(int argc, char** argv) {
         case s51::WidgetType::Indicator:
           on = s51::indicatorOn(w, v, 100) ? 1 : 0;
           break;
+        case s51::WidgetType::Button: {
+          // Taste: gezeichnetes Symbol (Nummer) und Rahmen von Symbol und Text
+          s51::ButtonBoxes b = s51::buttonBoxes(w);
+          char buf[96];
+          snprintf(buf, sizeof(buf), "%u:%.1f,%.1f,%.1f:%.1f,%.1f", unsigned(s51::resolveIcon(w.icon, v)),
+                   b.hasIcon ? b.ix : -1.0f, b.hasIcon ? b.iy : -1.0f, b.hasIcon ? b.is : -1.0f,
+                   b.hasText ? b.tx : -1.0f, b.hasText ? b.tw : -1.0f);
+          text = buf;
+          break;
+        }
         default:
           break;
       }

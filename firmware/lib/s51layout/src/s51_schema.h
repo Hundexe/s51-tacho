@@ -16,7 +16,7 @@ struct Color {
 
 constexpr char kMagic[4] = {'S', '5', '1', 'L'};
 constexpr uint8_t kVersionMajor = 1;
-constexpr uint8_t kVersionMinor = 2;
+constexpr uint8_t kVersionMinor = 3;
 constexpr uint16_t kHeaderSize = 16;
 constexpr uint16_t kDisplayWidth = 480;
 constexpr uint16_t kDisplayHeight = 320;
@@ -48,10 +48,11 @@ enum class WidgetType : uint8_t {
   Indicator = 5,  // Kontrollleuchte
   Rect = 6,  // Fläche / Linie
   Image = 7,  // Bild
+  Button = 8,  // Taste
 };
 
 constexpr bool isKnownWidgetType(uint8_t c) {
-  return c == 1 || c == 2 || c == 3 || c == 4 || c == 5 || c == 6 || c == 7;
+  return c == 1 || c == 2 || c == 3 || c == 4 || c == 5 || c == 6 || c == 7 || c == 8;
 }
 
 enum class Source : uint8_t {
@@ -76,6 +77,12 @@ enum class Source : uint8_t {
   SongTitle = 18,  // Songtitel
   SongArtist = 19,  // Interpret
   ServiceKm = 20,  // Kilometer bis Wartung
+  SongAlbum = 21,  // Album
+  SongPosition = 22,  // Titel-Position (m:ss)
+  SongLength = 23,  // Titellänge (m:ss)
+  SongProgress = 24,  // Titel-Fortschritt
+  Volume = 25,  // Lautstärke am Handy
+  PhoneName = 26,  // Name des Handys
   BlinkerLeft = 64,  // Blinker links
   BlinkerRight = 65,  // Blinker rechts
   HighBeam = 66,  // Fernlicht
@@ -83,9 +90,10 @@ enum class Source : uint8_t {
   Light = 68,  // Licht an
   AlarmArmed = 69,  // Alarm scharf
   GpsFix = 70,  // GPS-Empfang
-  BtConnected = 71,  // iPhone verbunden
+  BtConnected = 71,  // Handy verbunden
   ShiftLight = 72,  // Schaltblitz
   Warning = 73,  // Eine Warnung aktiv
+  MusicPlaying = 74,  // Musik läuft
 };
 
 constexpr bool isBoolSource(Source s) { return static_cast<uint8_t>(s) >= 64 && static_cast<uint8_t>(s) < 128; }
@@ -122,6 +130,12 @@ constexpr SourceDef kSourceDefs[] = {
   {Source::SongTitle, SourceKind::Text, 0.0f, 0.0f},
   {Source::SongArtist, SourceKind::Text, 0.0f, 0.0f},
   {Source::ServiceKm, SourceKind::Number, 0.0f, 800.0f},
+  {Source::SongAlbum, SourceKind::Text, 0.0f, 0.0f},
+  {Source::SongPosition, SourceKind::Text, 0.0f, 0.0f},
+  {Source::SongLength, SourceKind::Text, 0.0f, 0.0f},
+  {Source::SongProgress, SourceKind::Number, 38.0f, 38.0f},
+  {Source::Volume, SourceKind::Number, 60.0f, 60.0f},
+  {Source::PhoneName, SourceKind::Text, 0.0f, 0.0f},
   {Source::BlinkerLeft, SourceKind::Bool, 0.0f, 0.0f},
   {Source::BlinkerRight, SourceKind::Bool, 0.0f, 0.0f},
   {Source::HighBeam, SourceKind::Bool, 0.0f, 0.0f},
@@ -132,9 +146,10 @@ constexpr SourceDef kSourceDefs[] = {
   {Source::BtConnected, SourceKind::Bool, 0.0f, 0.0f},
   {Source::ShiftLight, SourceKind::Bool, 0.0f, 0.0f},
   {Source::Warning, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::MusicPlaying, SourceKind::Bool, 0.0f, 0.0f},
 };
 
-constexpr size_t kSourceCount = 31;
+constexpr size_t kSourceCount = 38;
 
 enum class Icon : uint8_t {
   None = 0,  // Kein Symbol
@@ -150,6 +165,14 @@ enum class Icon : uint8_t {
   Lock = 10,  // Schloss
   Warning = 11,  // Warndreieck
   Music = 12,  // Musik
+  Play = 13,  // Abspielen
+  Pause = 14,  // Pause
+  PlayPause = 15,  // Abspielen/Pause (wechselt mit „Musik läuft“)
+  Next = 16,  // Nächster Titel
+  Previous = 17,  // Voriger Titel
+  VolumeUp = 18,  // Lauter
+  VolumeDown = 19,  // Leiser
+  Menu = 20,  // Menü
 };
 
 enum class Font : uint8_t {
@@ -167,6 +190,42 @@ enum class Align : uint8_t {
 enum class Orientation : uint8_t {
   Horizontal = 0,  // Waagerecht
   Vertical = 1,  // Senkrecht
+};
+
+enum class Action : uint8_t {
+  None = 0,  // Keine
+  PlayPause = 1,  // Abspielen/Pause
+  NextTrack = 2,  // Nächster Titel
+  PreviousTrack = 3,  // Voriger Titel
+  VolumeUp = 4,  // Lauter
+  VolumeDown = 5,  // Leiser
+  PageNext = 6,  // Nächste Seite
+  PagePrevious = 7,  // Vorige Seite
+  Menu = 8,  // Menü öffnen
+  NightMode = 9,  // Nachtmodus umschalten
+  Lock = 10,  // Sperren (mit PIN)
+  TripReset = 11,  // Tageskilometer A zurücksetzen
+};
+
+// Aktionen mit ihrem Namen in der tacho.cfg (Abschnitt [taster])
+struct ActionDef {
+  Action action;
+  const char* cfgKey;
+};
+
+constexpr ActionDef kActionDefs[] = {
+  {Action::None, "keine"},
+  {Action::PlayPause, "play_pause"},
+  {Action::NextTrack, "naechster_titel"},
+  {Action::PreviousTrack, "voriger_titel"},
+  {Action::VolumeUp, "lauter"},
+  {Action::VolumeDown, "leiser"},
+  {Action::PageNext, "seite_vor"},
+  {Action::PagePrevious, "seite_zurueck"},
+  {Action::Menu, "menue"},
+  {Action::NightMode, "nachtmodus"},
+  {Action::Lock, "sperren"},
+  {Action::TripReset, "trip_zuruecksetzen"},
 };
 
 enum class Prop : uint8_t {
@@ -200,6 +259,7 @@ enum class Prop : uint8_t {
   BorderWidth = 28,  // Rahmenbreite (px) (u8)
   Image = 29,  // Bild (u8)
   FromZero = 30,  // Ab 0 füllen (bool)
+  Action = 31,  // Aktion beim Antippen (enum:action)
 };
 
 enum class CfgType : uint8_t { Int, Float, Bool, Str, Enum };
@@ -238,6 +298,12 @@ enum class CfgKey : uint16_t {
   GpsZeitzone,
   BluetoothAktiv,
   BluetoothName,
+  TasterTaster1Kurz,
+  TasterTaster1Lang,
+  TasterTaster2Kurz,
+  TasterTaster2Lang,
+  TasterTaster3Kurz,
+  TasterTaster3Lang,
   WlanModus,
   WlanSsid,
   WlanPasswort,
@@ -287,6 +353,7 @@ struct CfgDef {
   uint8_t borderWidth; \
   uint8_t image; \
   bool fromZero; \
+  Action action; \
   uint32_t propsSet[2];
 
 constexpr CfgDef kConfigDefs[] = {
@@ -323,6 +390,12 @@ constexpr CfgDef kConfigDefs[] = {
   {"gps", "zeitzone", CfgType::Str, "Europe/Berlin", 0.0f, 0.0f, ""},
   {"bluetooth", "aktiv", CfgType::Bool, "ja", 0.0f, 0.0f, ""},
   {"bluetooth", "name", CfgType::Str, "S51-Tacho", 0.0f, 0.0f, ""},
+  {"taster", "taster1_kurz", CfgType::Enum, "seite_vor", 0.0f, 0.0f, "keine|play_pause|naechster_titel|voriger_titel|lauter|leiser|seite_vor|seite_zurueck|menue|nachtmodus|sperren|trip_zuruecksetzen"},
+  {"taster", "taster1_lang", CfgType::Enum, "trip_zuruecksetzen", 0.0f, 0.0f, "keine|play_pause|naechster_titel|voriger_titel|lauter|leiser|seite_vor|seite_zurueck|menue|nachtmodus|sperren|trip_zuruecksetzen"},
+  {"taster", "taster2_kurz", CfgType::Enum, "play_pause", 0.0f, 0.0f, "keine|play_pause|naechster_titel|voriger_titel|lauter|leiser|seite_vor|seite_zurueck|menue|nachtmodus|sperren|trip_zuruecksetzen"},
+  {"taster", "taster2_lang", CfgType::Enum, "keine", 0.0f, 0.0f, "keine|play_pause|naechster_titel|voriger_titel|lauter|leiser|seite_vor|seite_zurueck|menue|nachtmodus|sperren|trip_zuruecksetzen"},
+  {"taster", "taster3_kurz", CfgType::Enum, "naechster_titel", 0.0f, 0.0f, "keine|play_pause|naechster_titel|voriger_titel|lauter|leiser|seite_vor|seite_zurueck|menue|nachtmodus|sperren|trip_zuruecksetzen"},
+  {"taster", "taster3_lang", CfgType::Enum, "voriger_titel", 0.0f, 0.0f, "keine|play_pause|naechster_titel|voriger_titel|lauter|leiser|seite_vor|seite_zurueck|menue|nachtmodus|sperren|trip_zuruecksetzen"},
   {"wlan", "modus", CfgType::Enum, "hotspot", 0.0f, 0.0f, "hotspot|heimnetz"},
   {"wlan", "ssid", CfgType::Str, "S51-Tacho", 0.0f, 0.0f, ""},
   {"wlan", "passwort", CfgType::Str, "simson51", 0.0f, 0.0f, ""},

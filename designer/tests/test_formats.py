@@ -240,7 +240,7 @@ class DocumentationMatchesSchema(unittest.TestCase):
             self.assertIn(f"| {s.code} | `{s.key}` |", doc)
         for p in S.PROPS:
             self.assertIn(f"| {p.code} | `{p.key}` |", doc)
-        for name in ("icon", "font", "align", "orientation"):
+        for name in ("icon", "font", "align", "orientation", "action"):
             for code, key, _ in S.ENUMS[name]:
                 self.assertIn(f"{code} `{key}`", doc)
 

@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 
 MAGIC = b"S51L"
 VERSION_MAJOR = 1
-VERSION_MINOR = 2
+VERSION_MINOR = 3
 HEADER_SIZE = 16
 DISPLAY_WIDTH = 480
 DISPLAY_HEIGHT = 320
@@ -93,6 +93,12 @@ SOURCES = [
     Source(18, "song_title", "Songtitel", kind="text"),
     Source(19, "song_artist", "Interpret", kind="text"),
     Source(20, "service_km", "Kilometer bis Wartung", "km", demo_min=0, demo_max=800),
+    Source(21, "song_album", "Album", kind="text"),
+    Source(22, "song_position", "Titel-Position (m:ss)", kind="text"),
+    Source(23, "song_length", "Titellänge (m:ss)", kind="text"),
+    Source(24, "song_progress", "Titel-Fortschritt", "%", demo_min=38, demo_max=38),
+    Source(25, "volume", "Lautstärke am Handy", "%", demo_min=60, demo_max=60),
+    Source(26, "phone_name", "Name des Handys", kind="text"),
     Source(64, "blinker_left", "Blinker links", kind="bool"),
     Source(65, "blinker_right", "Blinker rechts", kind="bool"),
     Source(66, "high_beam", "Fernlicht", kind="bool"),
@@ -100,9 +106,10 @@ SOURCES = [
     Source(68, "light", "Licht an", kind="bool"),
     Source(69, "alarm_armed", "Alarm scharf", kind="bool"),
     Source(70, "gps_fix", "GPS-Empfang", kind="bool"),
-    Source(71, "bt_connected", "iPhone verbunden", kind="bool"),
+    Source(71, "bt_connected", "Handy verbunden", kind="bool"),
     Source(72, "shift_light", "Schaltblitz", kind="bool"),
     Source(73, "warning", "Eine Warnung aktiv", kind="bool"),
+    Source(74, "music_playing", "Musik läuft", kind="bool"),
 ]
 
 # Symbole für Kontrollleuchten
@@ -120,7 +127,41 @@ ICONS = [
     (10, "lock", "Schloss"),
     (11, "warning", "Warndreieck"),
     (12, "music", "Musik"),
+    (13, "play", "Abspielen"),
+    (14, "pause", "Pause"),
+    (15, "play_pause", "Abspielen/Pause (wechselt mit „Musik läuft“)"),
+    (16, "next", "Nächster Titel"),
+    (17, "previous", "Voriger Titel"),
+    (18, "volume_up", "Lauter"),
+    (19, "volume_down", "Leiser"),
+    (20, "menu", "Menü"),
 ]
+
+
+@dataclass(frozen=True)
+class Action:
+    code: int
+    key: str           # im Layout (Eigenschaft action)
+    cfg: str           # in der tacho.cfg (Abschnitt [taster])
+    label: str
+
+
+# Aktionen für das Element „Taste“ und die Lenkertaster
+ACTIONS = [
+    Action(0, "none", "keine", "Keine"),
+    Action(1, "play_pause", "play_pause", "Abspielen/Pause"),
+    Action(2, "next_track", "naechster_titel", "Nächster Titel"),
+    Action(3, "previous_track", "voriger_titel", "Voriger Titel"),
+    Action(4, "volume_up", "lauter", "Lauter"),
+    Action(5, "volume_down", "leiser", "Leiser"),
+    Action(6, "page_next", "seite_vor", "Nächste Seite"),
+    Action(7, "page_previous", "seite_zurueck", "Vorige Seite"),
+    Action(8, "menu", "menue", "Menü öffnen"),
+    Action(9, "night_mode", "nachtmodus", "Nachtmodus umschalten"),
+    Action(10, "lock", "sperren", "Sperren (mit PIN)"),
+    Action(11, "trip_reset", "trip_zuruecksetzen", "Tageskilometer A zurücksetzen"),
+]
+ACTION_CHOICES = tuple(a.cfg for a in ACTIONS)
 
 FONTS = [(0, "sans", "Normal"), (1, "sans_bold", "Fett"), (2, "segment", "7-Segment")]
 ALIGNS = [(0, "left", "Links"), (1, "center", "Mitte"), (2, "right", "Rechts")]
@@ -168,6 +209,7 @@ PROPS = [
     Prop(28, "border_width", "Rahmenbreite (px)", "u8", 0),
     Prop(29, "image", "Bild", "u8", 0xFF),
     Prop(30, "from_zero", "Ab 0 füllen", "bool", False),
+    Prop(31, "action", "Aktion beim Antippen", "enum:action", "none"),
 ]
 
 
@@ -209,6 +251,10 @@ WIDGET_TYPES = [
     WidgetType(7, "image", "Bild",
                ("image",),
                (64, 64), {}),
+    WidgetType(8, "button", "Taste",
+               ("action", "icon", "text", "color", "bg_color", "font", "size", "radius", "border_color", "border_width"),
+               (72, 56), {"action": "play_pause", "icon": "play_pause", "bg_color": "#2C2C2A", "radius": 12,
+                          "font": "sans_bold", "size": 16}),
 ]
 
 # Nachschlagetabellen
@@ -225,7 +271,9 @@ ENUMS = {
     "font": FONTS,
     "align": ALIGNS,
     "orientation": ORIENTATIONS,
+    "action": [(a.code, a.key, a.label) for a in ACTIONS],
 }
+ACTION_BY_CFG = {a.cfg: a for a in ACTIONS}
 
 
 def enum_code(enum_name, key):
@@ -282,7 +330,7 @@ CONFIG = [
     # Anzeige
     CfgKey("anzeige", "layout_datei", "str", "design.s51",
            "Standard-Design: Name der Layout-Datei im Ordner s51 auf der SD-Karte. "
-           "Am Tacho lässt sich durch langes Drücken ein anderes wählen."),
+           "Am Tacho lässt sich im Menü (lange drücken) ein anderes wählen."),
     CfgKey("anzeige", "startseite", "int", 0, "Nummer (id) der Tagseite, die nach dem Start gezeigt wird.", 0, 15),
     CfgKey("anzeige", "startbild_dauer_s", "int", 2,
            "Wie lange die Startbild-Seite des Layouts beim Einschalten gezeigt wird, in Sekunden. 0 = aus.", 0, 10),
@@ -316,8 +364,17 @@ CONFIG = [
     CfgKey("gps", "messrate_hz", "int", 10, "Messungen pro Sekunde. NEO-6M: höchstens 5.", 1, 10),
     CfgKey("gps", "zeitzone", "str", "Europe/Berlin", "Zeitzone für die Uhrzeit (mit Sommerzeit)."),
     # Bluetooth
-    CfgKey("bluetooth", "aktiv", "bool", True, "Bluetooth für Musik und Uhrzeit vom iPhone."),
+    CfgKey("bluetooth", "aktiv", "bool", True,
+           "Bluetooth für Musiksteuerung (iPhone und Android), Titelanzeige und Uhrzeit (nur iPhone)."),
     CfgKey("bluetooth", "name", "str", "S51-Tacho", "Name, unter dem der Tacho am Handy erscheint."),
+    # Lenkertaster (Belegung, gleiche Aktionen wie das Element „Taste“)
+    CfgKey("taster", "taster1_kurz", "enum", "seite_vor", "Taster 1 kurz drücken.", choices=ACTION_CHOICES),
+    CfgKey("taster", "taster1_lang", "enum", "trip_zuruecksetzen", "Taster 1 lang drücken (1 Sekunde).",
+           choices=ACTION_CHOICES),
+    CfgKey("taster", "taster2_kurz", "enum", "play_pause", "Taster 2 kurz drücken.", choices=ACTION_CHOICES),
+    CfgKey("taster", "taster2_lang", "enum", "keine", "Taster 2 lang drücken.", choices=ACTION_CHOICES),
+    CfgKey("taster", "taster3_kurz", "enum", "naechster_titel", "Taster 3 kurz drücken.", choices=ACTION_CHOICES),
+    CfgKey("taster", "taster3_lang", "enum", "voriger_titel", "Taster 3 lang drücken.", choices=ACTION_CHOICES),
     # WLAN
     CfgKey("wlan", "modus", "enum", "hotspot",
            "hotspot = Tacho öffnet eigenes WLAN. heimnetz = Tacho verbindet sich mit dem WLAN unten.",

@@ -44,6 +44,7 @@ const P = {
   gauge: '<path d="M5.6 18.4a9 9 0 1 1 12.8 0"/><path d="m12 14 4-5"/><circle cx="12" cy="14" r="1.4" fill="currentColor" stroke="none"/>',
   indicator: '<path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
   rect: '<rect x="4" y="6" width="16" height="12" rx="2.5"/>',
+  button: '<rect x="3" y="6" width="18" height="12" rx="4"/><path d="M10 9.5v5l4-2.5z" fill="currentColor" stroke="none"/>',
 };
 
 export function icon(name, cls = "") {
@@ -51,4 +52,4 @@ export function icon(name, cls = "") {
 }
 
 export const TYPE_ICON = { text: "text", value: "value", bar: "bar", gauge: "gauge", indicator: "indicator", rect: "rect",
-  image: "image" };
+  image: "image", button: "button" };

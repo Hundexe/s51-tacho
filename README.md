@@ -15,7 +15,7 @@ Referenzfahrzeug: Simson S51B mit VAPE-Zündung (12 V) und Batterie.
 - Trip, Max, Durchschnitt, Fahrzeit, Tank-Kilometer, Wartungserinnerung
 - Anzeige frei gestaltbar mit dem PC-Programm [S51 Designer](designer/README.md), Übertragung per SD-Karte oder WLAN
 - Fahrtenbuch auf SD-Karte, Updates per WLAN
-- Musiksteuerung per Bluetooth, Songtitel vom iPhone
+- Musiksteuerung per Bluetooth (iPhone und Android), Songtitel und Uhrzeit vom iPhone, Touch-Tasten im Layout, Lenkertaster frei belegbar
 - Bewegungsalarm mit Alarmton, entsperren per Zündschlüssel, PIN oder NFC-Tag
 - Im Stand praktisch kein Ruhestrom
 
@@ -24,7 +24,7 @@ Referenzfahrzeug: Simson S51B mit VAPE-Zündung (12 V) und Batterie.
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 | Display-Test mit Demo-Daten | **Auf echtem WT32-SC01 Plus getestet:** Firmware 0.1.0 läuft, Display und Touch funktionieren. Geflasht mit der Release-Datei über esptool-js im Browser |
-| 2 | Oberfläche | Firmware 0.4.0 zeigt Layouts von der SD-Karte mit Startbild, Seitenwechsel, Design-Auswahl und geglätteten Rundinstrumenten, **auf dem Display getestet**. Firmware 0.5.0 bringt Menü (lange drücken), Wartung, PIN und Sperrbildschirm, Alarm-Protokoll und WLAN-Übertragung: Abläufe am PC geprüft, **auf dem Display und mit echtem WLAN noch nicht getestet**. Alarmton folgt in Phase 5. Werte noch Demo-Werte. Designer 0.6.0 mit neuer Oberfläche im Browserfenster, **unter Windows getestet**. Designer 0.6.1 zeigt den Dateinamen nach dem Senden, ungetestet |
+| 2 | Oberfläche | Firmware 0.5.0 mit Layouts, Design-Auswahl, Menü (lange drücken), Wartung, PIN und Sperrbildschirm, Alarm-Protokoll und WLAN-Übertragung, **auf dem Display getestet**. Firmware 0.6.0 bringt Musik per Bluetooth (Steuerung, beim iPhone Titel und Uhrzeit) und Tasten im Layout: am PC geprüft, **mit echtem Handy noch nicht getestet**. Alarmton folgt in Phase 5, Werte noch Demo-Werte. Designer 0.6.0 **unter Windows getestet**, Designer 0.7.0 (Taste, Musik-Quellen, Lenkertaster) **ungetestet** |
 | 3 | I²C-Module | offen |
 | 4 | GPS und Drehzahl | offen |
 | 5 | Stromversorgung und Alarm | offen |

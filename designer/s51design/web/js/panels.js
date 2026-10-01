@@ -3,7 +3,7 @@
 import { icon, TYPE_ICON } from "./icons.js";
 import { model } from "./model.js";
 import { demoValues, renderThumb } from "./render.js";
-import { S, get, typeLabel } from "./schema.js";
+import { S, enumLabel, get, typeLabel } from "./schema.js";
 import { dropdown, h, showError } from "./ui.js";
 
 const ROLE_TEXT = { page: "Tagseite", night: "Nachtversion", startup: "Startbild" };
@@ -17,6 +17,8 @@ export function widgetTitle(w) {
   } else if ("source" in w.props || w.type === "value") {
     const src = S.sources.get(get(w, "source"));
     detail = src && src.key !== "none" ? src.label : "";
+  } else if (w.type === "button") {
+    detail = enumLabel("action", get(w, "action"));
   } else if (w.type === "rect") {
     detail = w.w <= 2 || w.h <= 2 ? "Linie" : "";
   }

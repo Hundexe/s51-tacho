@@ -13,8 +13,7 @@ void Values::clear() {
     has[i] = false;
     flag[i] = false;
   }
-  songTitle.clear();
-  songArtist.clear();
+  for (auto& t : text) t.clear();
   timeValid = false;
   hour = minute = second = 0;
 }
@@ -80,7 +79,7 @@ std::string displayText(const WidgetData& w, const Values& v) {
     case SourceKind::Time:
       return formatTime(v, w.format.empty() ? std::string("HH:MM") : w.format);
     case SourceKind::Text:
-      return src == Source::SongTitle ? v.songTitle : v.songArtist;
+      return v.getText(src);
     case SourceKind::Bool:
       return v.getFlag(src) ? "an" : "aus";
     case SourceKind::Number:
@@ -137,6 +136,39 @@ bool segmentLit(const WidgetData& w, bool hasValue, float value, int i, int n, f
   return b > a && a <= c && c <= b;
 }
 
+Icon resolveIcon(Icon icon, const Values& v) {
+  if (icon == Icon::PlayPause) return v.getFlag(Source::MusicPlaying) ? Icon::Pause : Icon::Play;
+  return icon;
+}
+
+ButtonBoxes buttonBoxes(const WidgetData& w) {
+  ButtonBoxes b;
+  b.hasIcon = w.icon != Icon::None;
+  b.hasText = !w.text.empty();
+  const float x = w.x, y = w.y, bw = w.w, bh = w.h;
+  const float m = std::min(bw, bh), s = 0.55f * m;
+  if (b.hasIcon && !b.hasText) {
+    b.ix = x + bw / 2 - s / 2;
+    b.iy = y + bh / 2 - s / 2;
+    b.is = s;
+  } else if (b.hasText && !b.hasIcon) {
+    b.tx = x;
+    b.ty = y;
+    b.tw = bw;
+    b.th = bh;
+  } else if (b.hasIcon) {
+    const float a = (m - s) / 2;
+    b.ix = x + a;
+    b.iy = y + bh / 2 - s / 2;
+    b.is = s;
+    b.tx = x + s + 2 * a;
+    b.ty = y;
+    b.tw = bw - s - 3 * a;
+    b.th = bh;
+  }
+  return b;
+}
+
 bool indicatorOn(const WidgetData& w, const Values& v, uint32_t ms) {
   Source src = w.source;
   bool on = false;
@@ -164,8 +196,13 @@ void demoValues(Values& v, float t, bool animate) {
   v.set(Source::Gear, static_cast<float>(gear));
   v.set(Source::Rpm, gear == 0 ? 1500.0f : 3000.0f + inGear * 4500.0f);
   v.set(Source::Lean, animate ? 30.0f * std::sin(t * 0.7f) : 12.0f);
-  v.songTitle = "Schwalbenflug";
-  v.songArtist = "Testband";
+  v.setText(Source::SongTitle, "Schwalbenflug");
+  v.setText(Source::SongArtist, "Testband");
+  v.setText(Source::SongAlbum, "Mopedtour");
+  v.setText(Source::SongPosition, "1:23");
+  v.setText(Source::SongLength, "3:41");
+  v.setText(Source::PhoneName, "iPhone");
+  v.setFlag(Source::MusicPlaying, true);
   bool blink = animate ? static_cast<int>(t * 2) % 2 == 0 : true;
   v.setFlag(Source::BlinkerLeft, blink);
   v.setFlag(Source::BlinkerRight, false);

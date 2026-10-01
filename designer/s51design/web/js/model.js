@@ -252,6 +252,13 @@ class Model {
     this.change(() => { w.props[key] = value; }, "props");
   }
 
+  // Mehrere Eigenschaften in einem Schritt (ein Mal Rückgängig)
+  setProps(values) {
+    const w = this.widget;
+    if (!w || Object.entries(values).every(([k, v]) => get(w, k) === v)) return;
+    this.change(() => { Object.assign(w.props, values); }, "props");
+  }
+
   setFlag(key, value, index = this.selected) {
     const w = this.screen.widgets[index];
     if (!w || w[key] === value) return;

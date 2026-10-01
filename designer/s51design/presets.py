@@ -94,9 +94,27 @@ def klar():
         _w("value", 340, 280, 120, 30, source="head_temp", size=24, color="#6B2A22", align="right",
            unit=" °C", warn_above=200.0, crit_above=240.0),
     ])
+    musik = Screen(4, "Musik", bg="#000000", widgets=[
+        _w("indicator", 10, 8, 26, 26, source="bt_connected", icon="bluetooth", on_color=BLUE),
+        _w("value", 42, 8, 220, 26, source="phone_name", font="sans", size=14, color=dim, align="left"),
+        _w("value", 380, 8, 90, 26, source="time", font="sans", size=18, color=dim, align="right"),
+        _w("value", 20, 60, 440, 44, source="song_title", font="sans_bold", size=30),
+        _w("value", 20, 106, 440, 28, source="song_artist", font="sans", size=20, color=TEXT),
+        _w("value", 20, 136, 440, 22, source="song_album", font="sans", size=14, color=dim),
+        _w("value", 8, 176, 56, 20, source="song_position", font="sans", size=12, color=dim, align="right"),
+        _w("bar", 72, 183, 336, 6, source="song_progress", min=0.0, max=100.0, segments=0, color=TEXT,
+           bg_color=line, radius=3, warn_above=0.0, crit_above=0.0),
+        _w("value", 416, 176, 56, 20, source="song_length", font="sans", size=12, color=dim, align="left"),
+        _w("button", 16, 236, 64, 52, action="volume_down", icon="volume_down", bg_color="#151715"),
+        _w("button", 112, 232, 76, 60, action="previous_track", icon="previous"),
+        _w("button", 204, 224, 72, 72, action="play_pause", icon="play_pause", bg_color=GREEN, color="#000000",
+           radius=36),
+        _w("button", 292, 232, 76, 60, action="next_track", icon="next"),
+        _w("button", 400, 236, 64, 52, action="volume_up", icon="volume_up", bg_color="#151715"),
+    ])
     logo = _logo()
     return Layout(name="Klar", author="S51-Tacho", images=[logo],
-                  screens=[fahrt, statistik, nacht, _startup(3, logo)])
+                  screens=[fahrt, statistik, musik, nacht, _startup(3, logo)])
 
 
 
@@ -343,6 +361,31 @@ def alle_elemente():
         _label(282, 272, 180, "blinkt, solange an", 12),
     ]
     leuchten = Screen(3, "Kontrollleuchten", widgets=lw)
+    tw = [hdr("Tasten und Musik")]
+    acts = [("play_pause", "play_pause"), ("previous_track", "previous"), ("next_track", "next"),
+            ("volume_down", "volume_down"), ("volume_up", "volume_up"), ("menu", "menu")]
+    for i, (act, ic) in enumerate(acts):
+        tw.append(_w("button", 12 + i * 77, 48, 68, 52, action=act, icon=ic))
+    tw += [
+        _w("button", 12, 112, 140, 48, action="page_previous", icon="arrow_left", text="Zurück"),
+        _w("button", 166, 112, 140, 48, action="lock", icon="lock", text="Sperren", bg_color=LINE,
+           border_color=AMBER, border_width=2),
+        _w("button", 320, 112, 148, 48, action="night_mode", icon="none", text="Nachtmodus", font="sans", size=15),
+        _w("rect", 12, 172, 456, 1, color=LINE),
+        _w("value", 12, 182, 456, 28, source="song_title", font="sans_bold", size=20, align="left"),
+        _w("value", 12, 212, 300, 22, source="song_artist", font="sans", size=15, color=DIM, align="left"),
+        _w("value", 320, 212, 148, 22, source="song_album", font="sans", size=13, color=DIM, align="right"),
+        _w("value", 12, 244, 50, 18, source="song_position", font="sans", size=12, color=DIM, align="left"),
+        _w("bar", 66, 250, 348, 6, source="song_progress", min=0.0, max=100.0, segments=0, color=GREEN, bg_color=LINE,
+           radius=3, warn_above=0.0, crit_above=0.0),
+        _w("value", 418, 244, 50, 18, source="song_length", font="sans", size=12, color=DIM, align="right"),
+        _w("indicator", 12, 278, 28, 28, source="music_playing", icon="play_pause", on_color=GREEN),
+        _w("indicator", 48, 278, 28, 28, source="bt_connected", icon="bluetooth", on_color=BLUE),
+        _w("value", 84, 280, 200, 24, source="phone_name", font="sans", size=14, color=DIM, align="left"),
+        _label(300, 284, 80, "Lautstärke", 12),
+        _w("value", 380, 280, 88, 24, source="volume", font="sans_bold", size=16, align="right", unit=" %"),
+    ]
+    tasten = Screen(8, "Tasten und Musik", widgets=tw)
     flaechen = Screen(4, "Flächen", widgets=[
         hdr("Flächen, Linien, Versteckt, Gesperrt"),
         _w("rect", 12, 48, 100, 70, color=BLUE),
@@ -398,7 +441,7 @@ def alle_elemente():
            size=13, color=DIM, align="left"),
     ])
     return Layout(name="Alle Elemente", author="S51-Tacho", images=[gross, klein, amber],
-                  screens=[texte, balken, rund, leuchten, flaechen, nacht, bilder,
+                  screens=[texte, balken, rund, leuchten, tasten, flaechen, nacht, bilder,
                            _startup(7, gross, "Alle Elemente", "Startbild-Seite mit Logo und Text")])
 
 

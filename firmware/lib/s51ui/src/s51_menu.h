@@ -29,6 +29,18 @@ struct TransferInfo {
   int secondsLeft = 0;          // bis zum automatischen Schließen
 };
 
+// Zustand von Bluetooth für die Seite „Bluetooth“
+struct BluetoothInfo {
+  bool enabled = false;         // bluetooth.aktiv
+  std::string name;             // Name, unter dem der Tacho sichtbar ist
+  bool connected = false;
+  std::string device;           // Name des Handys
+  bool mediaInfo = false;       // Titel und Uhrzeit vom iPhone
+  std::string track;            // „Titel – Interpret“
+  bool playing = false;
+  int bonded = 0;               // gespeicherte Kopplungen
+};
+
 struct MaintenanceItem {
   std::string name;
   int intervalKm = 0;           // 0: aus
@@ -66,6 +78,11 @@ class MenuHost {
   virtual std::vector<std::string> configNotes() = 0;      // Hinweise beim Lesen der tacho.cfg
   virtual std::vector<std::pair<std::string, std::string>> about() = 0;
 
+  // Bluetooth
+  virtual BluetoothInfo bluetooth() = 0;
+  virtual void mediaPlayPause() = 0;
+  virtual void forgetBluetooth() = 0;
+
   // Übertragung
   virtual void transferOpen(bool open) = 0;
   virtual TransferInfo transfer() = 0;
@@ -74,7 +91,8 @@ class MenuHost {
 class Menu {
  public:
   enum class Page : uint8_t {
-    Closed, Main, Maintenance, Alarm, AlarmLog, Settings, ConfigNotes, About, Transfer, PinEntry, Message, Lock
+    Closed, Main, Maintenance, Alarm, AlarmLog, Settings, ConfigNotes, About, Transfer, PinEntry, Message, Lock,
+    Bluetooth
   };
   enum class Request : uint8_t { None, OpenPicker, Unlocked };
 
@@ -105,7 +123,7 @@ class Menu {
  private:
   enum class PinFlow : uint8_t { Set, Change, Remove };
   enum class PinStep : uint8_t { Old, New, Repeat };
-  enum class MsgAction : uint8_t { None, MaintenanceDone, ClearLog };
+  enum class MsgAction : uint8_t { None, MaintenanceDone, ClearLog, ForgetBluetooth };
 
   struct Hit {
     int x, y, w, h, id;

@@ -3,7 +3,7 @@
 // firmware/hosttest/values_main.cpp. Aufruf: node rules_main.mjs <info.json> <layout.json>
 import fs from "node:fs";
 import { initSchema, get } from "../../s51design/web/js/schema.js";
-import { demoValues, displayText, fillRange, fillValue, indicatorOn, segmentLit, thresholdColor } from "../../s51design/web/js/render.js";
+import { buttonBoxes, demoValues, displayText, fillRange, fillValue, indicatorOn, resolveIcon, segmentLit, thresholdColor } from "../../s51design/web/js/render.js";
 
 const info = JSON.parse(fs.readFileSync(process.argv[2], "utf8"));
 const layout = JSON.parse(fs.readFileSync(process.argv[3], "utf8"));
@@ -32,6 +32,12 @@ for (const s of layout.screens) {
       }
     } else if (w.type === "indicator") {
       on = indicatorOn(w, vals, 0.1) ? 1 : 0;
+    } else if (w.type === "button") {
+      const [ib, tb] = buttonBoxes(w);
+      const code = info.enums.icon.find((e) => e[1] === resolveIcon(get(w, "icon"), vals))[0];
+      const f = (x) => x.toFixed(1);
+      text = `${code}:${ib ? f(ib[0]) : "-1.0"},${ib ? f(ib[1]) : "-1.0"},${ib ? f(ib[2]) : "-1.0"}:` +
+        `${tb ? f(tb[0]) : "-1.0"},${tb ? f(tb[2]) : "-1.0"}`;
     }
     out.push(`${s.id}|${i}|${text}|${col === "-" ? col : col.toUpperCase()}|${fr[0].toFixed(3)}-${fr[1].toFixed(3)}|${on}`);
   });

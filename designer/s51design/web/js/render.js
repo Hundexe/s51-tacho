@@ -22,10 +22,15 @@ export function demoValues(t = performance.now() / 1000, animate = true, now = n
   v.time = { h: now.getHours(), m: now.getMinutes(), s: now.getSeconds() };
   v.song_title = "Schwalbenflug";
   v.song_artist = "Testband";
+  v.song_album = "Mopedtour";
+  v.song_position = "1:23";
+  v.song_length = "3:41";
+  v.phone_name = "iPhone";
   const blink = animate ? Math.floor(t * 2) % 2 === 0 : true;
   Object.assign(v, {
     blinker_left: blink, blinker_right: false, high_beam: true, neutral: gear === 0, light: true,
     alarm_armed: false, gps_fix: true, bt_connected: true, shift_light: v.rpm > 6500, warning: v.head_temp > 200,
+    music_playing: true,
   });
   return v;
 }
@@ -105,6 +110,23 @@ export function segmentLit(w, value, i, n) {
   const f0 = fraction(w, 0);
   const end = c >= f0 ? (i + 1) / n : i / n;
   return [b > a && a <= c && c <= b, Math.abs(lo + (hi - lo) * end)];
+}
+
+// play_pause wird zu pause, solange Musik läuft, sonst play
+export function resolveIcon(icon, vals) {
+  if (icon === "play_pause") return vals.music_playing ? "pause" : "play";
+  return icon;
+}
+
+// Rahmen für Symbol und Text einer Taste: [symbol, text], je [x, y, w, h] oder null
+export function buttonBoxes(w) {
+  const hasIcon = get(w, "icon") !== "none", hasText = get(w, "text") !== "";
+  const m = Math.min(w.w, w.h), s = 0.55 * m;
+  if (hasIcon && !hasText) return [[w.x + w.w / 2 - s / 2, w.y + w.h / 2 - s / 2, s, s], null];
+  if (hasText && !hasIcon) return [null, [w.x, w.y, w.w, w.h]];
+  if (!hasIcon) return [null, null];
+  const a = (m - s) / 2;
+  return [[w.x + a, w.y + w.h / 2 - s / 2, s, s], [w.x + s + 2 * a, w.y, w.w - s - 3 * a, w.h]];
 }
 
 export function indicatorOn(w, vals, t) {
@@ -268,12 +290,39 @@ function line(ctx, x0, y0, x1, y1, width, color) {
   ctx.stroke();
 }
 
-function drawIcon(ctx, w, color) {
-  const icon = get(w, "icon");
-  const x0 = w.x, y0 = w.y, x1 = w.x + w.w, y1 = w.y + w.h;
-  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, s = Math.min(w.w, w.h);
-  const label = (text, size, col) => drawTextBox(ctx, text, x0, y0, w.w, w.h, "sans_bold", size, col, "center", false, false);
+// Symbol im Rahmen x, y, bw × bh
+function drawIcon(ctx, icon, bx, by, bw, bh, color) {
+  const x0 = bx, y0 = by, x1 = bx + bw, y1 = by + bh;
+  const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, s = Math.min(bw, bh);
+  const label = (text, size, col) => drawTextBox(ctx, text, x0, y0, bw, bh, "sans_bold", size, col, "center", false, false);
+  const R = (a, b, c, d) => rectF(ctx, a, b, c, d, color);
   switch (icon) {
+    case "play":
+      poly(ctx, [cx - s * 0.22, cy - s * 0.32, cx - s * 0.22, cy + s * 0.32, cx + s * 0.32, cy], color);
+      break;
+    case "pause":
+      R(cx - s * 0.28, cy - s * 0.3, cx - s * 0.08, cy + s * 0.3);
+      R(cx + s * 0.08, cy - s * 0.3, cx + s * 0.28, cy + s * 0.3);
+      break;
+    case "next":
+    case "previous": {
+      const d = icon === "next" ? 1 : -1, hh = s * 0.28;
+      poly(ctx, [cx - d * s * 0.38, cy - hh, cx - d * s * 0.38, cy + hh, cx - d * s * 0.02, cy], color);
+      poly(ctx, [cx - d * s * 0.02, cy - hh, cx - d * s * 0.02, cy + hh, cx + d * s * 0.32, cy], color);
+      const xa = Math.min(cx + d * s * 0.32, cx + d * s * 0.42), xb = Math.max(cx + d * s * 0.32, cx + d * s * 0.42);
+      R(xa, cy - hh, xb, cy + hh);
+      break;
+    }
+    case "volume_up":
+    case "volume_down":
+      R(cx - s * 0.4, cy - s * 0.12, cx - s * 0.25, cy + s * 0.12);
+      poly(ctx, [cx - s * 0.25, cy - s * 0.12, cx - s * 0.05, cy - s * 0.3, cx - s * 0.05, cy + s * 0.3, cx - s * 0.25, cy + s * 0.12], color);
+      R(cx + s * 0.08, cy - s * 0.04, cx + s * 0.4, cy + s * 0.04);
+      if (icon === "volume_up") R(cx + s * 0.2, cy - s * 0.16, cx + s * 0.28, cy + s * 0.16);
+      break;
+    case "menu":
+      for (const k of [-1, 0, 1]) R(cx - s * 0.32, cy + k * s * 0.2 - s * 0.05, cx + s * 0.32, cy + k * s * 0.2 + s * 0.05);
+      break;
     case "arrow_left":
       poly(ctx, [x0, cy, cx, y0 + s * 0.1, cx, cy - s * 0.18, x1, cy - s * 0.18, x1, cy + s * 0.18, cx, cy + s * 0.18,
         cx, y1 - s * 0.1], color);
@@ -350,13 +399,27 @@ function drawIcon(ctx, w, color) {
   }
 }
 
-function drawRect(ctx, w) {
+// Fläche mit Eckenradius, der Rahmen liegt innerhalb (Fläche und Taste)
+function drawPlate(ctx, w, color) {
   const bw = get(w, "border_width"), r = get(w, "radius");
   if (bw > 0) {
     roundRect(ctx, w.x, w.y, w.x + w.w, w.y + w.h, r, get(w, "border_color"));
-    if (w.w > 2 * bw && w.h > 2 * bw) roundRect(ctx, w.x + bw, w.y + bw, w.x + w.w - bw, w.y + w.h - bw, Math.max(0, r - bw), get(w, "color"));
+    if (w.w > 2 * bw && w.h > 2 * bw) roundRect(ctx, w.x + bw, w.y + bw, w.x + w.w - bw, w.y + w.h - bw, Math.max(0, r - bw), color);
   } else {
-    roundRect(ctx, w.x, w.y, w.x + w.w, w.y + w.h, r, get(w, "color"));
+    roundRect(ctx, w.x, w.y, w.x + w.w, w.y + w.h, r, color);
+  }
+}
+
+function drawRect(ctx, w) {
+  drawPlate(ctx, w, get(w, "color"));
+}
+
+function drawButton(ctx, w, vals) {
+  drawPlate(ctx, w, get(w, "bg_color"));
+  const [ib, tb] = buttonBoxes(w);
+  if (ib) drawIcon(ctx, resolveIcon(get(w, "icon"), vals), ib[0], ib[1], ib[2], ib[3], get(w, "color"));
+  if (tb && tb[2] > 0) {
+    drawTextBox(ctx, get(w, "text"), tb[0], tb[1], tb[2], tb[3], get(w, "font"), get(w, "size"), get(w, "color"), "center", true);
   }
 }
 
@@ -426,7 +489,11 @@ export function drawWidget(ctx, w, vals, t, layout, editor) {
       break;
     case "bar": drawBar(ctx, w, vals); break;
     case "gauge": drawGauge(ctx, w, vals); break;
-    case "indicator": drawIcon(ctx, w, indicatorOn(w, vals, t) ? get(w, "on_color") : get(w, "off_color")); break;
+    case "indicator":
+      drawIcon(ctx, resolveIcon(get(w, "icon"), vals), w.x, w.y, w.w, w.h,
+        indicatorOn(w, vals, t) ? get(w, "on_color") : get(w, "off_color"));
+      break;
+    case "button": drawButton(ctx, w, vals); break;
     case "rect": drawRect(ctx, w); break;
     case "image": drawImage(ctx, w, layout, editor); break;
     default:

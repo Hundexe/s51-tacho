@@ -12,6 +12,8 @@
 //
 // Bedienung: Wischen nach links/rechts oder Tippen an den linken/rechten Rand
 // wechselt die Seite. Lange drücken öffnet das Menü (firmware/README.md).
+// Tasten im Layout lösen ihre Aktion aus. Bluetooth zum Handy: Musik steuern, beim
+// iPhone Titel und Uhrzeit (bluetooth.cpp).
 // Sensoren gibt es noch nicht, die meisten Werte sind Demo-Werte wie im Designer.
 
 #include <Arduino.h>
@@ -29,11 +31,13 @@
 #include <string>
 #include <vector>
 
+#include "bluetooth.h"
 #include "lgfx_sc01plus.h"
 #include "pins.h"
 #include "s51_config.h"
 #include "s51_filename.h"
 #include "s51_layout.h"
+#include "s51_media.h"
 #include "s51_menu.h"
 #include "s51_picker.h"
 #include "s51_render.h"
@@ -73,6 +77,9 @@ static bool nfcFound = false;
 static uint32_t bootCount = 0;
 static std::string currentSource;           // Datei im Ordner s51, kIntern oder kBuiltin
 static std::vector<uint8_t> currentRaw;     // Inhalt der angezeigten Layout-Datei
+static const s51::ScreenData* shownScreen = nullptr;   // gerade angezeigte Seite
+static const s51::WidgetData* pressedButton = nullptr; // Taste unter dem Finger
+static int8_t nightOverride = -1;           // Aktion Nachtmodus: -1 wie tacho.cfg, 0 aus, 1 an
 
 // Werte aus dem NVS und das Protokoll, beim Start gelesen. Menü und Anzeige fragen sie
 // in jeder Runde ab, deshalb nicht jedes Mal aus dem Flash lesen.
@@ -225,6 +232,8 @@ static bool useDesign(const std::string& source) {
     Serial.printf("Design „%s“ nicht lesbar: %s\n", source.c_str(), s51::errorText(e));
     return false;
   }
+  pressedButton = nullptr;
+  shownScreen = nullptr;
   layout = std::move(tmp);
   renderer.setLayout(&layout);
   currentSource = source;
@@ -348,8 +357,13 @@ static std::vector<std::string> readLogFile() {
 static void addLog(const std::string& text) {
   uint32_t min = millis() / 60000;
   char when[80];
-  snprintf(when, sizeof(when), "Start %u, %u:%02u h nach dem Einschalten: ", unsigned(bootCount), unsigned(min / 60),
-           unsigned(min % 60));
+  int y, mo, d, h, mi, sec;
+  if (s51::mediaClock(bt::state(), millis(), y, mo, d, h, mi, sec)) {
+    snprintf(when, sizeof(when), "%d.%d.%d %02d:%02d: ", d, mo, y, h, mi);   // Uhrzeit vom iPhone
+  } else {
+    snprintf(when, sizeof(when), "Start %u, %u:%02u h nach dem Einschalten: ", unsigned(bootCount),
+             unsigned(min / 60), unsigned(min % 60));
+  }
   std::string line = when + text;
   Serial.printf("Protokoll: %s\n", line.c_str());
   std::vector<std::string>& lines = stored.log;
@@ -472,6 +486,11 @@ class TachoHost : public s51::MenuHost {
     r.push_back({"Speicher frei", kb(ESP.getFreePsram()) + " PSRAM, " + kb(ESP.getFreeHeap()) + " RAM"});
     r.push_back({"PIN", pinSet() ? "festgelegt" : "keine"});
     r.push_back({"NFC-Leser", nfcFound ? "gefunden" : "nicht angeschlossen"});
+    {
+      s51::MediaState m = bt::state();
+      r.push_back({"Bluetooth", !bt::enabled() ? "aus" : m.connected ? "verbunden mit " + m.phoneName : "sichtbar, nicht verbunden"});
+      r.push_back({"Uhrzeit", m.timeValid ? "vom iPhone" : "unbekannt (kommt vom iPhone oder GPS)"});
+    }
     r.push_back({"Starts", std::to_string(bootCount)});
     uint32_t min = millis() / 60000;
     char buf[16];
@@ -479,6 +498,21 @@ class TachoHost : public s51::MenuHost {
     r.push_back({"Laufzeit", buf});
     return r;
   }
+  s51::BluetoothInfo bluetooth() override {
+    s51::BluetoothInfo b;
+    b.enabled = bt::enabled();
+    b.name = cfg.getStr(s51::CfgKey::BluetoothName);
+    s51::MediaState m = bt::state();
+    b.connected = m.connected;
+    b.device = m.phoneName;
+    b.mediaInfo = m.mediaInfo;
+    b.playing = m.playback == 1;
+    b.track = m.title.empty() ? m.artist : m.artist.empty() ? m.title : m.title + " \xE2\x80\x93 " + m.artist;
+    b.bonded = bt::bondedCount();
+    return b;
+  }
+  void mediaPlayPause() override { bt::send(s51::Action::PlayPause); }
+  void forgetBluetooth() override { bt::forgetAll(); }
   void transferOpen(bool open) override {
     if (!open) {
       ::transfer::close();
@@ -733,6 +767,7 @@ static void applyPicked() {
 // ---------------------------------------------------------------------------
 
 static bool nightMode() {
+  if (nightOverride >= 0) return nightOverride == 1;   // mit einer Taste umgeschaltet
   // „auto“ braucht Lichtsensor oder Lichtschalter (Phase 3), bis dahin wie „aus“
   return cfg.getStr(s51::CfgKey::AnzeigeNachtmodus) == "an";
 }
@@ -744,7 +779,9 @@ static void applyBrightness() {
 
 static void updateValues() {
   s51::demoValues(values, millis() / 1000.0f, true);
-  values.timeValid = false;   // Uhrzeit kommt später von GPS oder iPhone (Phase 4)
+  values.timeValid = false;   // Uhrzeit vom iPhone (unten) oder später vom GPS (Phase 4)
+  // Echt: Musik, Handy und Uhrzeit vom Handy. Ohne Verbindung leer.
+  s51::mediaToValues(bt::state(), values, millis());
   // Schon echt: Alarm scharf und Kilometer bis zur nächsten Wartung
   values.setFlag(s51::Source::AlarmArmed, alarmArmedNow());
   float odo = odometerKm(), best = 0;
@@ -809,7 +846,75 @@ static void nextPage(int dir) {
   Serial.printf("Seite %u\n", unsigned(pages[pageIndex]));
 }
 
-// Wischen oder Tippen an den Rand wechselt die Seite, lange drücken öffnet das Menü
+// Kurze Meldung unten im Bild
+static void showToast(const std::string& text) {
+  notes.assign(1, text);
+  notesUntil = millis() + 2500;
+}
+
+// Aktion einer Taste im Layout oder (ab Phase 3) eines Lenkertasters
+static void runAction(s51::Action a) {
+  using A = s51::Action;
+  switch (a) {
+    case A::None:
+      break;
+    case A::PlayPause:
+    case A::NextTrack:
+    case A::PreviousTrack:
+    case A::VolumeUp:
+    case A::VolumeDown:
+      if (!bt::send(a)) showToast(bt::enabled() ? "Kein Handy verbunden" : "Bluetooth ist aus (tacho.cfg)");
+      break;
+    case A::PageNext: nextPage(1); break;
+    case A::PagePrevious: nextPage(-1); break;
+    case A::Menu: menu.open(); break;
+    case A::NightMode:
+      nightOverride = nightMode() ? 0 : 1;
+      applyBrightness();
+      break;
+    case A::Lock:
+      if (pinSet()) {
+        menu.lock(millis(), 0);
+      } else {
+        showToast("Erst im Menü Alarm eine PIN festlegen");
+      }
+      break;
+    case A::TripReset:
+      showToast("Tageskilometer kommen mit GPS (Phase 4)");
+      break;
+  }
+}
+
+// Belegung der Lenkertaster aus der tacho.cfg. nr 1 … 3. Die Taster werden in Phase 3
+// über den MCP23017 angeschlossen, dann ruft die Auswertung runAction(tasterAction(…)).
+[[maybe_unused]] static s51::Action tasterAction(int nr, bool longPress) {
+  static const s51::CfgKey keys[3][2] = {
+      {s51::CfgKey::TasterTaster1Kurz, s51::CfgKey::TasterTaster1Lang},
+      {s51::CfgKey::TasterTaster2Kurz, s51::CfgKey::TasterTaster2Lang},
+      {s51::CfgKey::TasterTaster3Kurz, s51::CfgKey::TasterTaster3Lang},
+  };
+  if (nr < 1 || nr > 3) return s51::Action::None;
+  const std::string& name = cfg.getStr(keys[nr - 1][longPress ? 1 : 0]);
+  for (const auto& d : s51::kActionDefs) {
+    if (name == d.cfgKey) return d.action;
+  }
+  return s51::Action::None;
+}
+
+// Taste im Layout an dieser Stelle, oberste zuerst
+static const s51::WidgetData* buttonAt(int x, int y) {
+  if (!shownScreen) return nullptr;
+  const auto& ws = shownScreen->widgets;
+  for (auto it = ws.rbegin(); it != ws.rend(); ++it) {
+    const s51::WidgetData& w = *it;
+    if (!w.known || w.hidden || w.type != s51::WidgetType::Button) continue;
+    if (x >= w.x && x < w.x + w.w && y >= w.y && y < w.y + w.h) return &w;
+  }
+  return nullptr;
+}
+
+// Wischen oder Tippen an den Rand wechselt die Seite, Tasten lösen ihre Aktion aus,
+// lange drücken öffnet das Menü
 static void handleTouch() {
   static bool down = false, consumed = false;
   static int32_t startX = 0, startY = 0, lastX = 0, lastY = 0;
@@ -827,6 +932,7 @@ static void handleTouch() {
     down = true;
     bool still = abs(lastX - startX) < 15 && abs(lastY - startY) < 15;
     if (menu.isOpen()) menu.pointer(still ? startX : -1, still ? startY : -1, true);
+    pressedButton = !menu.isOpen() && !picker.isOpen() && still ? buttonAt(startX, startY) : nullptr;
     if (!consumed && !menu.isOpen() && !picker.isOpen() && still && millis() - downAt > 900) {
       consumed = true;
       menu.open();
@@ -836,6 +942,8 @@ static void handleTouch() {
   if (!down) return;
   down = false;
   menu.pointer(-1, -1, false);
+  const s51::WidgetData* button = pressedButton;
+  pressedButton = nullptr;
   if (consumed) return;
   int dx = lastX - startX, dy = lastY - startY;
   if (menu.isOpen()) {
@@ -867,6 +975,14 @@ static void handleTouch() {
       default: break;
     }
     return;
+  }
+  if (button) {
+    if (abs(dx) < 15 && abs(dy) < 15) {
+      Serial.printf("Taste: Aktion %u\n", unsigned(button->action));
+      runAction(button->action);
+      return;
+    }
+    if (abs(dx) <= 50) return;   // auf der Taste verrutscht: nichts tun, nur Wischen wechselt die Seite
   }
   if (dx < -50) {
     nextPage(1);
@@ -933,6 +1049,7 @@ void setup() {
     notes.push_back("Sicherheitsstufe 2 ohne PIN: im Menü Alarm festlegen");
   }
   if (bootCount <= 5) notes.push_back("Lange drücken: Menü");
+  if (cfg.getBool(s51::CfgKey::BluetoothAktiv)) bt::begin(cfg.getStr(s51::CfgKey::BluetoothName));
   applyBrightness();
   showStartup();
   if (lockRequired()) {
@@ -949,13 +1066,16 @@ void loop() {
   updateValues();
   uint32_t now = millis();
   if (menu.isOpen()) {
+    shownScreen = nullptr;
     menu.tick(now);
     menu.draw(canvas, renderer, now);
   } else if (picker.isOpen()) {
     picker.draw(canvas, renderer, previewOk ? &previewSprite : nullptr);
   } else if (!pages.empty()) {
     const s51::ScreenData* s = layout.screenFor(pages[pageIndex], nightMode());
-    if (s) renderer.drawScreen(canvas, *s, values, millis());
+    if (s != shownScreen) pressedButton = nullptr;
+    shownScreen = s;
+    if (s) renderer.drawScreen(canvas, *s, values, millis(), pressedButton);
     drawNotes();
     drawPageDots();
   } else {

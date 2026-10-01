@@ -15,7 +15,7 @@ struct Values {
   float number[128];      // Zahlenquellen, Index = Nummer der Quelle
   bool has[128];          // false: Wert unbekannt, Anzeige „–“
   bool flag[128];         // Ja/Nein-Quellen
-  std::string songTitle, songArtist;
+  std::string text[64];   // Textquellen (Songtitel, Interpret …), Index = Nummer der Quelle
   bool timeValid = false;
   uint8_t hour = 0, minute = 0, second = 0;
 
@@ -27,6 +27,8 @@ struct Values {
   bool hasNumber(Source s) const { return has[idx(s)]; }
   float get(Source s) const { return number[idx(s)]; }
   bool getFlag(Source s) const { return flag[idx(s)]; }
+  void setText(Source s, const std::string& t) { text[idx(s) & 63] = t; }
+  const std::string& getText(Source s) const { return text[idx(s) & 63]; }
   static size_t idx(Source s) { return static_cast<uint8_t>(s) & 0x7F; }
 };
 
@@ -49,6 +51,15 @@ void fillRange(const WidgetData& w, bool hasValue, float value, float& a, float&
 float fillValue(const WidgetData& w, float value);
 // Leuchtet Segment i von n? segValue: Wert, nach dem das Segment gefärbt wird
 bool segmentLit(const WidgetData& w, bool hasValue, float value, int i, int n, float& segValue);
+// Gezeichnetes Symbol: PlayPause wird zu Pause, solange Musik läuft, sonst Play
+Icon resolveIcon(Icon icon, const Values& v);
+// Rahmen für Symbol und Text einer Taste (x, y, w, h). Gibt zurück, welche es gibt.
+struct ButtonBoxes {
+  bool hasIcon = false, hasText = false;
+  float ix = 0, iy = 0, is = 0;              // Symbol: quadratisch
+  float tx = 0, ty = 0, tw = 0, th = 0;      // Text
+};
+ButtonBoxes buttonBoxes(const WidgetData& w);
 // Kontrollleuchte an? ms = Laufzeit in Millisekunden (für das Blinken mit 2 Hz)
 bool indicatorOn(const WidgetData& w, const Values& v, uint32_t ms);
 

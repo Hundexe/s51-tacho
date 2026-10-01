@@ -44,6 +44,9 @@ enum : int {
   kHitRowNotes = 121,
   kHitRowAbout = 122,
   kHitRowMaint = 130,  // 130 … 139
+  kHitRowPlay = 140,
+  kHitRowForget = 141,
+  kHitHeaderLock = 4,
   kHitKey = 300,       // 300 … 309 Ziffern
   kHitKeyDel = 310,
   kHitKeyOk = 311,
@@ -52,7 +55,7 @@ enum : int {
   kHitTransferRetry = 410,
 };
 
-enum Tile : int { kTileDesign, kTileMaint, kTileAlarm, kTileTransfer, kTileSettings, kTileLock };
+enum Tile : int { kTileDesign, kTileMaint, kTileAlarm, kTileTransfer, kTileSettings, kTileBluetooth };
 
 std::string km(float v) { return formatNumber(std::round(v), 0) + " km"; }
 
@@ -181,19 +184,16 @@ Menu::Request Menu::tap(int x, int y, uint32_t now) {
       case kTileAlarm: push(Page::Alarm); break;
       case kTileTransfer: push(Page::Transfer); break;
       case kTileSettings: push(Page::Settings); break;
-      case kTileLock:
-        if (host_.hasPin()) {
-          lock(now, 0);
-        } else {
-          showMessage("Sperren", "Zum Sperren zuerst im Menü Alarm eine PIN festlegen.", "OK");
-        }
-        break;
+      case kTileBluetooth: push(Page::Bluetooth); break;
     }
+  } else if (id == kHitHeaderLock) {
+    if (host_.hasPin()) lock(now, 0);
   } else if (id >= kHitKey && id <= kHitKeyOk) {
     return pinKey(id - kHitKey, now);
   } else if (id == kHitMsgPrimary) {
     if (msgAction_ == MsgAction::MaintenanceDone) host_.maintenanceDone(msgArg_);
     if (msgAction_ == MsgAction::ClearLog) host_.clearAlarmLog();
+    if (msgAction_ == MsgAction::ForgetBluetooth) host_.forgetBluetooth();
     msgAction_ = MsgAction::None;
     pop();
   } else if (id == kHitMsgSecondary) {
@@ -223,6 +223,13 @@ void Menu::onRow(int id) {
                                   : "Am I²C-Bus ist kein NFC-Leser (PN532) angeschlossen. NFC ist optional, "
                                     "das Anlernen folgt mit einer späteren Firmware.",
                 "OK");
+  } else if (id == kHitRowPlay) {
+    host_.mediaPlayPause();
+  } else if (id == kHitRowForget) {
+    showMessage("Kopplungen löschen",
+                "Alle gekoppelten Handys vergessen? Danach jedes Handy neu koppeln und am Handy den alten Eintrag "
+                "„Ignorieren“ bzw. „Entkoppeln“.",
+                "Löschen", "Abbrechen", MsgAction::ForgetBluetooth);
   } else if (id == kHitRowLog) {
     push(Page::AlarmLog);
   } else if (id == kHitRowGears) {
@@ -430,6 +437,27 @@ std::vector<Menu::Row> Menu::rowsFor(Page p) {
                  kHitRowNotes, Row::Control::Chevron);
     n.warn = !notes.empty();
     add("Über diesen Tacho", "Firmware, Design, Speicher", kHitRowAbout, Row::Control::Chevron);
+  } else if (p == Page::Bluetooth) {
+    BluetoothInfo b = host_.bluetooth();
+    if (!b.enabled) {
+      Row& r = add("Bluetooth ist aus", "Einschalten in der tacho.cfg: [bluetooth] aktiv = ja", 0, Row::Control::None);
+      r.dim = true;
+      return rows;
+    }
+    if (b.connected) {
+      add(b.device.empty() ? "Handy verbunden" : b.device,
+          b.mediaInfo ? "Steuerung, Titel und Uhrzeit vom iPhone" : "Steuerung (Titel gibt es nur mit iPhone)", 0,
+          Row::Control::None);
+      Row& m = add("Musik", b.track.empty() ? (b.playing ? "Läuft" : "Keine Titelangaben") : b.track, kHitRowPlay,
+                   Row::Control::Button);
+      m.button = b.playing ? "Pause" : "Abspielen";
+    } else {
+      Row& r = add("Nicht verbunden", "Am Handy unter Bluetooth „" + b.name + "“ wählen", 0, Row::Control::None);
+      r.warn = true;
+    }
+    Row& f = add("Gekoppelte Handys", b.bonded == 0 ? "Noch keins" : std::to_string(b.bonded) + " gespeichert",
+                 b.bonded > 0 ? kHitRowForget : 0, b.bonded > 0 ? Row::Control::Button : Row::Control::None);
+    f.button = "Vergessen";
   } else if (p == Page::ConfigNotes) {
     auto notes = host_.configNotes();
     if (!host_.configFound()) {
@@ -478,6 +506,7 @@ void Menu::drawButton(LGFX_Sprite& g, Renderer& r, int x, int y, int w, int h, c
 
 void Menu::drawMain(LGFX_Sprite& g, Renderer& r) {
   drawHeader(g, r, "Menü", false, true);
+  if (host_.hasPin()) drawButton(g, r, g.width() - 60 - 104, 7, 100, 34, "Sperren", false, kHitHeaderLock);
   auto items = host_.maintenance();
   float odo = host_.odometerKm();
   size_t due = 0, set = 0;
@@ -503,8 +532,15 @@ void Menu::drawMain(LGFX_Sprite& g, Renderer& r) {
       {"Übertragung", "WLAN für den Designer", false, false},
       {"Einstellungen", notes ? plural(notes, "Hinweis", "Hinweise") + " zur tacho.cfg" : "Gänge, tacho.cfg, Info",
        notes > 0, false},
-      {"Sperren", host_.hasPin() ? "Entsperren mit PIN" : "Erst PIN festlegen", false, !host_.hasPin()},
+      {"Bluetooth", "", false, false},
   };
+  {
+    BluetoothInfo b = host_.bluetooth();
+    tiles[kTileBluetooth].status = !b.enabled    ? "Aus"
+                                   : b.connected ? (b.device.empty() ? std::string("Verbunden") : b.device)
+                                                 : "Nicht verbunden";
+    tiles[kTileBluetooth].dim = !b.enabled;
+  }
   const int gap = 10, x0 = 12, y0 = kTop + 2;
   const int w = (g.width() - 2 * x0 - 2 * gap) / 3;
   const int h = (g.height() - y0 - 12 - gap) / 2;
@@ -762,6 +798,10 @@ void Menu::draw(LGFX_Sprite& g, Renderer& r, uint32_t now) {
     case Page::Settings:
       drawHeader(g, r, "Einstellungen", true, true);
       drawRows(g, r, rowsFor(Page::Settings), kTop);
+      break;
+    case Page::Bluetooth:
+      drawHeader(g, r, "Bluetooth", true, true);
+      drawRows(g, r, rowsFor(Page::Bluetooth), kTop);
       break;
     case Page::ConfigNotes:
       drawHeader(g, r, "Hinweise zur tacho.cfg", true, true);

@@ -47,6 +47,12 @@ await page.locator(".page", { hasText: "Startbild" }).click();
 await clickDisplay(240, 100);
 await shot("designer-bild");
 
+// Musikseite von „Klar“ mit ausgewählter Taste
+await page.keyboard.press("Escape");
+await page.locator("#page-list > .page", { hasText: "Musik" }).click();
+await clickDisplay(240, 260);
+await shot("designer-taste");
+
 await page.keyboard.press("Control+n");
 await page.waitForTimeout(800);
 await shot("designer-vorlagen");

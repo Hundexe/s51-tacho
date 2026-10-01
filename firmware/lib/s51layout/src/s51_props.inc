@@ -36,6 +36,7 @@ static void applyDefaults(WidgetData& w) {
   w.borderWidth = 0;
   w.image = 255;
   w.fromZero = false;
+  w.action = Action::None;
   switch (w.type) {
     case WidgetType::Text:
       w.text = "Text";
@@ -68,6 +69,14 @@ static void applyDefaults(WidgetData& w) {
       w.color = Color{0x2C, 0x2C, 0x2A};
       break;
     case WidgetType::Image:
+      break;
+    case WidgetType::Button:
+      w.action = Action::PlayPause;
+      w.icon = Icon::PlayPause;
+      w.bgColor = Color{0x2C, 0x2C, 0x2A};
+      w.radius = 12;
+      w.font = Font::SansBold;
+      w.size = 16;
       break;
     default:
       break;
@@ -223,6 +232,11 @@ static bool decodeProp(uint8_t code, const uint8_t* p, uint8_t len, WidgetData& 
       if (len != 1) return false;
       w.fromZero = p[0] != 0;
       w.propsSet[0] |= (1u << 30);
+      return true;
+    case 31:  // action
+      if (len != 1) return false;
+      w.action = static_cast<Action>(p[0]);
+      w.propsSet[0] |= (1u << 31);
       return true;
     default:
       return true;

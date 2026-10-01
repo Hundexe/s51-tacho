@@ -9,6 +9,7 @@ import { confirmDialog, h, showError } from "./ui.js";
 import { widgetTitle } from "./panels.js";
 
 const GROUPS = [
+  ["Bedienung", ["action"]],
   ["Daten", ["source", "decimals", "unit", "format", "min", "max", "from_zero"]],
   ["Text", ["text", "font", "size", "align"]],
   ["Form", ["icon", "segments", "orientation", "start_angle", "end_angle", "thickness", "radius", "border_width", "blink"]],
@@ -24,6 +25,15 @@ const HINTS = {
   indicator: "Blinker pulsieren von selbst. „Blinken, wenn an“ ist für Zustände gedacht, die dauerhaft an sind.",
   image: "Der Tacho zeichnet Bilder immer in Originalgröße ab der linken oberen Ecke und schneidet am Rahmen ab.",
   text: "Lange Texte brechen am Rahmen um. Doppelklick auf das Element bearbeitet den Text.",
+  button: "Am Tacho löst Antippen die Aktion aus. Ohne Text steht das Symbol in der Mitte, mit Text links daneben. „Abspielen/Pause“ als Symbol wechselt von selbst, je nachdem ob Musik läuft. Die Lenkertaster belegt man unter Tacho-Einstellungen → Lenkertaster.",
+};
+
+// Passendes Symbol (oder kurzer Text) je Aktion, wird beim Wechsel der Aktion übernommen
+const ACTION_LOOK = {
+  none: ["none", ""], play_pause: ["play_pause", ""], next_track: ["next", ""], previous_track: ["previous", ""],
+  volume_up: ["volume_up", ""], volume_down: ["volume_down", ""], page_next: ["arrow_right", ""],
+  page_previous: ["arrow_left", ""], menu: ["menu", ""], night_mode: ["none", "Nacht"], lock: ["lock", ""],
+  trip_reset: ["none", "Trip 0"],
 };
 
 const root = () => document.getElementById("inspector");
@@ -152,7 +162,20 @@ function sourceOptions(type) {
 function propField(w, key) {
   const p = S.props.get(key);
   const value = get(w, key);
-  const commit = (v) => { wrap(() => model.setProp(key, v)); if (key === "source") renderInspector(); };
+  const commit = (v) => {
+    if (key === "action" && w.type === "button") {
+      // Symbol und Text mitziehen, solange sie noch zur alten Aktion passen
+      const [oldIcon, oldText] = ACTION_LOOK[get(w, "action")] || ["none", ""];
+      const [newIcon, newText] = ACTION_LOOK[v] || ["none", ""];
+      const next = { action: v };
+      if (get(w, "icon") === oldIcon && get(w, "text") === oldText) Object.assign(next, { icon: newIcon, text: newText });
+      wrap(() => model.setProps(next));
+      renderInspector();
+      return;
+    }
+    wrap(() => model.setProp(key, v));
+    if (key === "source") renderInspector();
+  };
   const t = p.type;
   if (t === "color") return colorField(value, commit);
   if (t === "bool") return switchField(value, commit);

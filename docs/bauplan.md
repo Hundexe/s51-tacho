@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.10, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.11, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -15,6 +15,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.8: Mehrere Designs auf der SD-Karte. Auswahl am Tacho durch langes Drücken, Standard-Design wird im Designer festgelegt.
 - 1.9: Rundinstrumente mit geglätteten Kanten. Balken und Rundinstrumente können ab 0 füllen (Schräglage nach beiden Seiten), Layout-Format 1.2.
 - 1.10: Menü am Tacho (lange drücken) mit Design, Wartung, Alarm, Übertragung, Einstellungen und Sperren. PIN und Sperrbildschirm, Alarm-Protokoll, WLAN-Übertragung in der Firmware.
+- 1.11: Musik per Bluetooth vorgezogen: Steuerung für iPhone und Android, Titel und Uhrzeit vom iPhone. Neues Layout-Element „Taste“ mit Aktionen. Belegung der Lenkertaster in der tacho.cfg (Abschnitt `[taster]`), im Designer einstellbar.
 
 ---
 
@@ -93,11 +94,12 @@ Die komplette Belegung steht im Code in `firmware/include/pins.h`.
 
 ### 3.5 Bedienung, Musik und iPhone
 - **Tasterpod:** 3× IP67-Taster in einer Schelle für den 22-mm-Lenker.
-  - Taster 1: kurz Seite wechseln, lang Trip zurücksetzen.
-  - Taster 2 und 3: Play/Pause und nächster Titel.
-  - Alle drei zusammen: PIN-Eingabe (siehe 4.4).
-- **Musiksteuerung:** Der ESP32-S3 meldet sich per Bluetooth LE beim iPhone als Medien-Fernbedienung an.
-- **Songtitel:** Das iPhone stellt Titel und Interpret über seine Medien-Schnittstelle (Apple Media Service) bereit. Der Tacho kann sie anzeigen, ohne Zusatz-App. Android bietet diese Schnittstelle nicht, dort bräuchte es eine Begleit-App.
+  - Belegung frei in der tacho.cfg (`[taster]`, im Designer unter Tacho-Einstellungen → Lenkertaster), je Taster kurz und lang. Dieselben Aktionen wie das Layout-Element „Taste“.
+  - Standard: Taster 1 kurz Seite wechseln, lang Trip zurücksetzen. Taster 2 kurz Play/Pause. Taster 3 kurz nächster Titel, lang voriger Titel.
+  - Alle drei zusammen: PIN-Eingabe (siehe 4.4), nicht umbelegbar.
+- **Musiksteuerung:** Der ESP32-S3 meldet sich per Bluetooth LE als Medien-Fernbedienung an (HID). Funktioniert mit iPhone und Android. Gekoppelt wird einmal am Handy unter Bluetooth, danach verbindet es sich von selbst.
+- **Songtitel:** Das iPhone stellt Titel, Interpret, Album, Position, Länge und Lautstärke über seine Medien-Schnittstelle (Apple Media Service) bereit. Der Tacho zeigt sie ohne Zusatz-App. Beim iPhone gehen die Befehle direkt an die Musik-App. Android bietet diese Schnittstelle nicht, dort bräuchte es eine Begleit-App.
+- **Anzeige:** Musik-Datenquellen und Tasten im Layout frei platzierbar, die Vorlage „Klar“ hat eine Musikseite. Kurzfassung der Bluetooth-Dienste: [datenblaetter.md](datenblaetter.md).
 
 ---
 
@@ -199,7 +201,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - **Startmodus:** Zuerst wird geprüft, warum der Tacho an ist. Zündung → Entsperren oder Fahransicht. Keine Zündung → Alarmprüfung ohne Display.
 - **Tasks:** Sensoren (Interrupts, GPS, I²C mit 20 Hz), Oberfläche (30 fps), Speicher und Fahrtenbuch, Bluetooth.
 - **Speicher:** 16 MB Flash mit zwei App-Bereichen für Updates per WLAN, dazu Dateisystem für Einstellungen.
-- **Uhrzeit:** Es gibt kein eigenes Uhr-Modul. Die Zeit kommt vom GPS, sobald es Satelliten empfängt, oder vom iPhone, sobald es per Bluetooth verbunden ist (iOS stellt die Uhrzeit für verbundene Geräte bereit). Bis dahin zeigt die Uhr „--:--“.
+- **Uhrzeit:** Es gibt kein eigenes Uhr-Modul. Die Zeit kommt vom iPhone, sobald es per Bluetooth verbunden ist (Current Time Service, ab Firmware 0.6.0), später auch vom GPS. Bis dahin zeigt die Uhr „--:--“.
 - **Kilometerstand:** im NVS mit Verschleißausgleich, alle 100 m und beim Abschalten.
 - **Seiten aus dem Layout:** Das mitgelieferte Layout „Klar“ hat die Seiten Fahrt, Statistik, eine Nachtversion der Fahrseite und ein Startbild mit Logo. Beliebige weitere Seiten lassen sich im Designer anlegen.
 - **Startbild:** Hat das Layout eine Startbild-Seite, zeigt der Tacho sie beim Einschalten für `anzeige.startbild_dauer_s` Sekunden. Sonst erscheint `anzeige.startbild_text`.
@@ -209,7 +211,8 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
   - Alarm: scharf/aus, Sicherheitsstufe, PIN festlegen, ändern oder entfernen, NFC-Tag anlernen, Protokoll
   - Übertragung: WLAN für den Designer einschalten, Code anzeigen (Firmware-Updates per WLAN folgen in Phase 8)
   - Einstellungen: Gänge anlernen, Hinweise zur tacho.cfg, Angaben zu Firmware und Speicher
-  - Sperren: Sperrbildschirm von Hand zeigen
+  - Bluetooth: verbundenes Handy, Musik, gekoppelte Handys vergessen
+  - Knopf „Sperren“ oben: Sperrbildschirm von Hand zeigen
 - **PIN:** 4–6 Ziffern, nur als SHA-256-Prüfwert mit Zufallssalz im internen Speicher. Vergessen: internen Speicher löschen und neu flashen (firmware/README.md).
 - **Warnfarben:** Schwellen je Element im Layout, Grenzwerte für Warnungen in der tacho.cfg.
 - **WLAN:** nur im Stand und nur, solange das Menü Übertragung offen ist.
@@ -225,13 +228,13 @@ Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste
 ## 8. Phasen
 
 1. **Display am Schreibtisch:** Demo-Fahransicht, Touch-Test (Code liegt in `firmware/`).
-2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Seitenwechsel, Nachtmodus (fertig ab Firmware 0.2.0), Design-Auswahl am Tacho (ab 0.3.0), Menüs, Sperrbildschirm mit PIN, Alarm-Protokoll und WLAN-Übertragung (ab 0.5.0). Werte noch Demo-Werte.
+2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Seitenwechsel, Nachtmodus (fertig ab Firmware 0.2.0), Design-Auswahl am Tacho (ab 0.3.0), Menüs, Sperrbildschirm mit PIN, Alarm-Protokoll und WLAN-Übertragung (ab 0.5.0), Musik per Bluetooth und Tasten im Layout (ab 0.6.0, aus Phase 8 vorgezogen). Werte noch Demo-Werte.
 3. **I²C-Module am Tisch:** Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
 4. **GPS und Drehzahl:** Drehzahl-Impulse simuliert mit einem zweiten Mikrocontroller.
 5. **Stromversorgung und Alarm:** Schutz-, Selbsthaltungs- und Wächterschaltung, Ruhestrom messen, Alarmton.
 6. **Provisorischer Einbau:** Probefahrten, Kalibrierung, Gänge anlernen, Alarm-Empfindlichkeit.
 7. **Lampenschale:** konstruieren, drucken, abdichten, endgültiger Einbau.
-8. **Extras:** Wartung, Fahrtenbuch, WLAN-Updates, iPhone-Musik, NFC, Hall-Sensor.
+8. **Extras:** Fahrtenbuch, WLAN-Updates, NFC, Hall-Sensor. (Wartung und Musik sind schon in Phase 2 gekommen.)
 
 ---
 

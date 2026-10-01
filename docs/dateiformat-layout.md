@@ -2,7 +2,7 @@
 
 Ein Layout beschreibt, was der Tacho anzeigt: welche Seiten es gibt und welche Elemente wo auf jeder Seite liegen. Layouts entstehen im PC-Programm [S51 Designer](../designer/README.md) und kommen über die SD-Karte oder per WLAN auf den Tacho.
 
-**Formatversion:** 1.2 (1.1 ergänzt Bilder und die Startbild-Seite, 1.2 die Eigenschaft `from_zero`)
+**Formatversion:** 1.3 (1.1 ergänzt Bilder und die Startbild-Seite, 1.2 die Eigenschaft `from_zero`, 1.3 das Element `button`, die Eigenschaft `action`, Musik-Quellen und Musik-Symbole)
 
 **Quellen im Code:**
 - Alle Nummern: `designer/s51design/schema.py`. Diese Datei ist die einzige Quelle. Der C++-Header der Firmware wird daraus erzeugt.
@@ -158,15 +158,18 @@ Platzbedarf: Ein Vollbild 480 × 320 ohne Alpha braucht unkomprimiert 300 KB.
 |---|---|---|---|
 | 1 | `text` | Text | `text`, `color`, `font`, `size`, `align` |
 | 2 | `value` | Wert | `source`, `color`, `font`, `size`, `align`, `decimals`, `unit`, `format`, `warn_above`, `warn_color`, `crit_above`, `crit_color` |
-| 3 | `bar` | Balken | `source`, `min`, `max`, `segments`, `orientation`, `color`, `bg_color`, `radius`, `warn_above`, `warn_color`, `crit_above`, `crit_color` |
-| 4 | `gauge` | Rundinstrument | `source`, `min`, `max`, `start_angle`, `end_angle`, `thickness`, `color`, `bg_color`, `warn_above`, `warn_color`, `crit_above`, `crit_color` |
+| 3 | `bar` | Balken | `source`, `min`, `max`, `from_zero`, `segments`, `orientation`, `color`, `bg_color`, `radius`, `warn_above`, `warn_color`, `crit_above`, `crit_color` |
+| 4 | `gauge` | Rundinstrument | `source`, `min`, `max`, `from_zero`, `start_angle`, `end_angle`, `thickness`, `color`, `bg_color`, `warn_above`, `warn_color`, `crit_above`, `crit_color` |
 | 5 | `indicator` | Kontrollleuchte | `source`, `icon`, `on_color`, `off_color`, `blink` |
 | 6 | `rect` | Fläche / Linie | `color`, `radius`, `border_color`, `border_width` |
 | 7 | `image` | Bild | `image` |
+| 8 | `button` | Taste | `action`, `icon`, `text`, `color`, `bg_color`, `font`, `size`, `radius`, `border_color`, `border_width` |
 
 ### 4.2 Datenquellen (`source`)
 
 1–63 sind Zahlen, Texte oder die Uhrzeit, 64–127 sind Ja/Nein-Zustände.
+
+Titel, Interpret, Album, Position, Länge, Fortschritt und Lautstärke liefert nur ein iPhone (Apple Media Service). Mit Android funktioniert die Steuerung über Tasten, die Felder bleiben leer.
 
 | Nummer | Schlüssel | Bedeutung | Einheit | Art |
 |---|---|---|---|---|
@@ -191,6 +194,12 @@ Platzbedarf: Ein Vollbild 480 × 320 ohne Alpha braucht unkomprimiert 300 KB.
 | 18 | `song_title` | Songtitel | – | Text |
 | 19 | `song_artist` | Interpret | – | Text |
 | 20 | `service_km` | Kilometer bis zur nächsten Wartung | km | Zahl |
+| 21 | `song_album` | Album | – | Text |
+| 22 | `song_position` | Position im Titel, z. B. `1:23` | – | Text |
+| 23 | `song_length` | Länge des Titels, z. B. `3:41` | – | Text |
+| 24 | `song_progress` | Fortschritt im Titel | % | Zahl |
+| 25 | `volume` | Lautstärke am Handy | % | Zahl |
+| 26 | `phone_name` | Name des verbundenen Handys | – | Text |
 | 64 | `blinker_left` | Blinker links | – | Ja/Nein |
 | 65 | `blinker_right` | Blinker rechts | – | Ja/Nein |
 | 66 | `high_beam` | Fernlicht | – | Ja/Nein |
@@ -198,9 +207,10 @@ Platzbedarf: Ein Vollbild 480 × 320 ohne Alpha braucht unkomprimiert 300 KB.
 | 68 | `light` | Licht an | – | Ja/Nein |
 | 69 | `alarm_armed` | Alarm scharf | – | Ja/Nein |
 | 70 | `gps_fix` | GPS-Empfang | – | Ja/Nein |
-| 71 | `bt_connected` | iPhone verbunden | – | Ja/Nein |
+| 71 | `bt_connected` | Handy per Bluetooth verbunden | – | Ja/Nein |
 | 72 | `shift_light` | Schaltblitz | – | Ja/Nein |
 | 73 | `warning` | Eine Warnung aktiv | – | Ja/Nein |
+| 74 | `music_playing` | Musik läuft | – | Ja/Nein |
 
 ### 4.3 Eigenschaften
 
@@ -236,6 +246,7 @@ Platzbedarf: Ein Vollbild 480 × 320 ohne Alpha braucht unkomprimiert 300 KB.
 | 28 | `border_width` | Rahmenbreite in Pixeln, 0 = kein Rahmen | u8 | 0 |
 | 29 | `image` | Nummer des Bilds aus einem IMAG-Abschnitt, 255 = kein Bild | u8 | 255 |
 | 30 | `from_zero` | Balken und Rundinstrument füllen sich ab dem Wert 0 statt ab `min` (u8: 0 oder 1), z. B. für die Schräglage | u8 | 0 |
+| 31 | `action` | Was beim Antippen einer Taste passiert | u8, Liste 4.5 | none |
 
 ### 4.4 Abweichende Standardwerte je Typ
 
@@ -250,10 +261,13 @@ Fehlt eine Eigenschaft in der Datei, gelten für diese Typen andere Standardwert
 | `indicator` | 32 × 32 | `source` = neutral, `icon` = neutral |
 | `rect` | 100 × 2 | `color` = #2C2C2A |
 | `image` | 64 × 64 (beim Laden eines Bilds dessen Größe) | – |
+| `button` | 72 × 56 | `action` = play_pause, `icon` = play_pause, `bg_color` = #2C2C2A, `radius` = 12, `font` = sans_bold, `size` = 16 |
 
 ### 4.5 Listen
 
-**Symbole (`icon`):** 0 `none` kein Symbol, 1 `arrow_left` Pfeil links, 2 `arrow_right` Pfeil rechts, 3 `high_beam` Fernlicht, 4 `neutral` Leerlauf (N), 5 `light` Licht, 6 `battery` Batterie, 7 `temp` Thermometer, 8 `gps` GPS, 9 `bluetooth` Bluetooth, 10 `lock` Schloss, 11 `warning` Warndreieck, 12 `music` Musik.
+**Symbole (`icon`):** 0 `none` kein Symbol, 1 `arrow_left` Pfeil links, 2 `arrow_right` Pfeil rechts, 3 `high_beam` Fernlicht, 4 `neutral` Leerlauf (N), 5 `light` Licht, 6 `battery` Batterie, 7 `temp` Thermometer, 8 `gps` GPS, 9 `bluetooth` Bluetooth, 10 `lock` Schloss, 11 `warning` Warndreieck, 12 `music` Musik, 13 `play` Abspielen, 14 `pause` Pause, 15 `play_pause` Abspielen oder Pause (zeigt Pause, solange `music_playing` an ist, sonst Abspielen), 16 `next` nächster Titel, 17 `previous` voriger Titel, 18 `volume_up` lauter, 19 `volume_down` leiser, 20 `menu` Menü.
+
+**Aktionen (`action`):** 0 `none` keine, 1 `play_pause` Abspielen/Pause, 2 `next_track` nächster Titel, 3 `previous_track` voriger Titel, 4 `volume_up` lauter, 5 `volume_down` leiser, 6 `page_next` nächste Seite, 7 `page_previous` vorige Seite, 8 `menu` Menü öffnen, 9 `night_mode` Nachtmodus umschalten (gilt bis zum Ausschalten), 10 `lock` sperren (nur mit PIN), 11 `trip_reset` Tageskilometer A zurücksetzen. Dieselbe Liste belegt die Lenkertaster in der Konfiguration, dort mit deutschen Namen ([konfiguration.md](konfiguration.md), Abschnitt `[taster]`).
 
 **Schrift (`font`):** 0 `sans` normal (DejaVu Sans), 1 `sans_bold` fett (DejaVu Sans Bold), 2 `segment` Ziffernschrift mit fester Zeichenbreite (DejaVu Sans Mono Bold), gut für Werte, deren Breite sich nicht ändern soll.
 
@@ -287,6 +301,19 @@ Diese Regeln gelten für den Tacho und für die Vorschau im Designer (`designer/
 **Ab 0 füllen (`from_zero`):** Für Werte, die links und rechts von 0 liegen, z. B. die Schräglage von −45 bis 45. Gefüllt wird der Bereich zwischen dem Anteil des Werts 0 und dem Anteil des Werts. Mit Segmenten leuchtet ein Segment, wenn seine Mitte (`(i + 0,5) / Segmente`) in diesem Bereich liegt; gefärbt wird es nach dem Wert an seinem Ende, das weiter von 0 entfernt ist. Die Warnregeln gelten für den Betrag des Werts, also auf beiden Seiten gleich. Ohne `from_zero` gilt die Regel oben (gefüllt ab `min`).
 
 **Kontrollleuchte:** Das Symbol füllt den Rahmen (kleinere Seite). Ist die Quelle „an“, wird `on_color` benutzt, sonst `off_color`. Mit `blink` wechselt ein eingeschaltetes Symbol im Takt von 2 Hz zwischen an und aus. Blinker-Eingänge pulsieren schon selbst und brauchen `blink` nicht.
+
+**Taste:** Fläche wie bei `rect` aus `bg_color`, `radius`, `border_color` und `border_width`. Darauf das Symbol und der Text in `color`. Für `icon` = `play_pause` gilt `pause`, solange `music_playing` an ist, sonst `play`.
+- Nur Symbol (Text leer): Seitenlänge = 0,55 × kleinere Seite der Taste, mittig.
+- Nur Text (`icon` = none): mittig mit `font` und `size`, Umbruch wie bei `text`, am Rahmen abgeschnitten.
+- Symbol und Text: Symbol wie oben, aber links mit Abstand a = (kleinere Seite − Seitenlänge) / 2 zum Rand, der Text mittig im Rest rechts davon (von x + Seitenlänge + 2a bis x + Breite − a).
+- Am Tacho löst Antippen die Aktion aus, solange die Taste gedrückt ist, wird sie heller gezeichnet. Tasten sind auf allen Seiten außer dem Startbild bedienbar. Antippen außerhalb von Tasten wechselt wie bisher die Seite.
+
+**Musik-Symbole:** gezeichnet um die Mitte (cx, cy) des Symbolrahmens mit s = kleinere Seite des Rahmens.
+- `play`: Dreieck (cx − 0,22 s, cy − 0,32 s), (cx − 0,22 s, cy + 0,32 s), (cx + 0,32 s, cy).
+- `pause`: zwei Balken von cx − 0,28 s bis cx − 0,08 s und von cx + 0,08 s bis cx + 0,28 s, je von cy − 0,3 s bis cy + 0,3 s.
+- `next`: Dreiecke mit Spitze bei (cx − 0,02 s, cy) und (cx + 0,32 s, cy), Grundseiten bei x = cx − 0,38 s und x = cx − 0,02 s (je cy ± 0,28 s), dazu ein Balken von cx + 0,32 s bis cx + 0,42 s. `previous` ist gespiegelt.
+- `volume_up`, `volume_down`: Lautsprecher (Rechteck cx − 0,4 s bis cx − 0,25 s, cy ± 0,12 s, dahinter ein Trichter bis cx − 0,05 s, cy ± 0,3 s), daneben „+“ bzw. „−“ aus Balken der Dicke 0,08 s von cx + 0,08 s bis cx + 0,4 s, der senkrechte Balken des „+“ bei cx + 0,2 s bis cx + 0,28 s, cy ± 0,16 s.
+- `menu`: drei waagerechte Balken von cx − 0,32 s bis cx + 0,32 s, Dicke 0,1 s, Mitten bei cy − 0,2 s, cy und cy + 0,2 s.
 
 **Fläche:** gefülltes Rechteck in `color` mit `radius` abgerundeten Ecken. Ist `border_width` größer als 0, liegt ein Rahmen in `border_color` dieser Breite innerhalb der Fläche, die Fläche wird dadurch nicht größer. Linien sind Flächen mit 1 Pixel Höhe oder Breite.
 
