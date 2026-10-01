@@ -10,3 +10,4 @@ designer/build/
 *.spec
 sd-simulator/
 firmware/hosttest/.build/
+designer/tools/node_modules/

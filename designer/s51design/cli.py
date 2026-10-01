@@ -7,13 +7,17 @@ Beispiele:
   python -m s51design.cli preset Klar design.s51       # mitgeliefertes Layout schreiben
   python -m s51design.cli config-check tacho.cfg       # Konfiguration prüfen
   python -m s51design.cli config-new tacho.cfg         # Vorlage mit allen Einträgen schreiben
+  python -m s51design.cli sd design.s51 E:\            # Design auf die SD-Karte, wird Standard
+  python -m s51design.cli sd design.s51 E:\ --standard klar.s51
 """
 
 import argparse
 import json
 import sys
 
-from . import config_format, layout_format, presets
+import os
+
+from . import config_format, layout_format, presets, sdcard
 
 
 def main(argv=None):
@@ -33,6 +37,11 @@ def main(argv=None):
     p.add_argument("datei")
     p = sub.add_parser("config-new", help="Konfigurationsvorlage schreiben")
     p.add_argument("datei")
+    p = sub.add_parser("sd", help="Design in den Ordner s51 einer SD-Karte schreiben")
+    p.add_argument("datei", help="Layout-Datei (.s51)")
+    p.add_argument("karte", help="Laufwerk oder Ordner der SD-Karte")
+    p.add_argument("--name", help="Dateiname auf der Karte (Standard: aus dem Layout-Namen)")
+    p.add_argument("--standard", help="Standard-Design beim Start (Standard: dieses Design)")
     args = ap.parse_args(argv)
 
     try:
@@ -61,11 +70,22 @@ def main(argv=None):
         elif args.cmd == "config-new":
             config_format.save(config_format.defaults(), args.datei)
             print(f"{args.datei} geschrieben")
+        elif args.cmd == "sd":
+            layout = layout_format.load(args.datei)
+            with open(args.datei, "rb") as f:
+                data = f.read()
+            name = sdcard.clean_file_name(args.name or sdcard.file_name_for(layout.name))
+            directory = sdcard.target_dir(args.karte)
+            sdcard.export(directory, data, name, args.standard or name)
+            print(f"{os.path.join(directory, name)} geschrieben, Standard-Design: {args.standard or name}")
     except layout_format.LayoutError as e:
         print("Fehler:", e, file=sys.stderr)
         return 2
     except OSError as e:
         print("Datei-Fehler:", e, file=sys.stderr)
+        return 2
+    except ValueError as e:
+        print("Fehler:", e, file=sys.stderr)
         return 2
     return 0
 

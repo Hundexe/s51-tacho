@@ -26,4 +26,6 @@ Nachbau und Einbau auf eigenes Risiko. Es wird keine Gewähr für Funktion, Sich
 
 ## Fremde Inhalte
 
+Die Schriften DejaVu Sans (in `firmware/fonts/` und `designer/s51design/web/fonts/`) stehen unter der Bitstream-Vera-Lizenz, Text in den jeweiligen `LICENSE.md` daneben. Die Symbole der Oberfläche sind für dieses Projekt gezeichnet und stehen wie der Designer unter MIT.
+
 Datenblätter von Herstellern sind nicht Teil des Repos und stehen nicht unter diesen Lizenzen. Links dazu in [docs/datenblaetter.md](docs/datenblaetter.md). Bibliotheken, die PlatformIO beim Bauen lädt, stehen unter ihren eigenen Lizenzen.

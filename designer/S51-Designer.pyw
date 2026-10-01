@@ -4,6 +4,6 @@ Unter Windows reicht ein Doppelklick auf diese Datei, wenn Python installiert is
 Wird auch als Einstieg für die exe (build_exe.bat) benutzt.
 """
 
-from s51design.app import main
+from s51design.webapp import main
 
 main()

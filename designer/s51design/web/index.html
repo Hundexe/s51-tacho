@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S51 Designer</title>
+<link rel="icon" href="img/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+<div id="app" class="app">
+  <header class="topbar">
+    <div class="brand" title="S51 Designer">
+      <img src="img/logo.svg" alt="" width="26" height="26">
+      <span>S51 Designer</span>
+    </div>
+    <div class="menu" id="file-menu"></div>
+    <div class="doc">
+      <input id="doc-name" class="doc-name" spellcheck="false" aria-label="Name des Layouts">
+      <span id="doc-state" class="doc-state"></span>
+    </div>
+    <div class="toolbar" id="toolbar"></div>
+    <div class="spacer"></div>
+    <div class="actions" id="actions"></div>
+  </header>
+
+  <aside class="left">
+    <section class="panel pages">
+      <div class="panel-head">
+        <h2>Seiten</h2>
+        <div class="head-tools" id="page-tools"></div>
+      </div>
+      <div class="page-list" id="page-list"></div>
+    </section>
+    <section class="panel layers">
+      <div class="panel-head"><h2>Ebenen</h2><span class="hint">vorne oben</span></div>
+      <div class="layer-list" id="layer-list"></div>
+    </section>
+  </aside>
+
+  <main class="stage" id="stage">
+    <div class="stage-scroll" id="stage-scroll">
+      <div class="bezel" id="bezel">
+        <canvas id="screen"></canvas>
+        <canvas id="overlay"></canvas>
+      </div>
+    </div>
+    <div class="dock" id="dock" role="toolbar" aria-label="Elemente und Ansicht"></div>
+    <div class="coords" id="coords"></div>
+  </main>
+
+  <aside class="right" id="inspector"></aside>
+
+  <footer class="statusbar">
+    <span id="status"></span>
+    <span class="spacer"></span>
+    <span id="filesize"></span>
+  </footer>
+</div>
+<div id="modal-root"></div>
+<div id="toast-root" class="toast-root" aria-live="polite"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
