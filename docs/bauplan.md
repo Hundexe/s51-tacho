@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.4, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.5, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -9,6 +9,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.2: Alarm gibt einen Ton aus. Entschärfen mit Zündschlüssel, PIN oder NFC-Tag.
 - 1.3: Für den Nachbau umgeschrieben, Stückliste in eigene Datei ausgelagert.
 - 1.4: Günstiger: Kopftemperatur mit PT1000 am ADS1115 statt Thermoelement und MCP9600. Uhr-Modul entfällt, Uhrzeit kommt von GPS und iPhone. GPS-Modul mit u-blox M8 oder M10. Lagesensor MPU6050 statt LSM6DS3 (günstiger, die Adresse ist ohne Uhr-Modul frei).
+- 1.5: Anzeige frei gestaltbar mit dem PC-Programm S51 Designer. Layout-Datei (.s51) und Konfiguration (tacho.cfg) kommen per SD-Karte oder WLAN auf den Tacho.
 
 ---
 
@@ -183,22 +184,23 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 
 ## 6. Software
 
-- **Basis:** PlatformIO mit Arduino-Framework, LovyanGFX als Display-Treiber, LVGL 9 für die Oberfläche (ab Phase 2).
+- **Basis:** PlatformIO mit Arduino-Framework, LovyanGFX als Display-Treiber.
+- **Anzeige frei gestaltbar:** Die Fahrseiten entstehen am PC im [S51 Designer](../designer/README.md). Elemente wie Werte, Balken, Rundinstrumente und Kontrollleuchten lassen sich frei platzieren. Der Tacho zeichnet die Seiten aus der Layout-Datei ([dateiformat-layout.md](dateiformat-layout.md)). Menüs (Einstellungen, PIN-Eingabe, Alarm, Übertragung) sind fest eingebaut.
+- **Einstellungen** stehen in der Textdatei `tacho.cfg` ([konfiguration.md](konfiguration.md)). PIN und NFC-Tags liegen nur im internen Speicher.
+- **Übertragung:** Layout und Einstellungen per SD-Karte (Ordner `s51`) oder per WLAN vom Designer ([uebertragung.md](uebertragung.md)).
 - **Startmodus:** Zuerst wird geprüft, warum der Tacho an ist. Zündung → Entsperren oder Fahransicht. Keine Zündung → Alarmprüfung ohne Display.
 - **Tasks:** Sensoren (Interrupts, GPS, I²C mit 20 Hz), Oberfläche (30 fps), Speicher und Fahrtenbuch, Bluetooth.
 - **Speicher:** 16 MB Flash mit zwei App-Bereichen für Updates per WLAN, dazu Dateisystem für Einstellungen.
 - **Uhrzeit:** Es gibt kein eigenes Uhr-Modul. Die Zeit kommt vom GPS, sobald es Satelliten empfängt, oder vom iPhone, sobald es per Bluetooth verbunden ist (iOS stellt die Uhrzeit für verbundene Geräte bereit). Bis dahin zeigt die Uhr „--:--“.
 - **Kilometerstand:** im NVS mit Verschleißausgleich, alle 100 m und beim Abschalten.
-- **Seiten:**
-  - Fahrt („Klar“), mit Songtitel-Zeile wenn Musik läuft
-  - Statistik: Trip A/B, Max, Ø, Fahrzeit, Tank-km
-  - Motor: Kopftemperatur, Spannung, Gehäusetemperatur
-  - Lage: Schräglage aktuell und Maximum
-  - Wartung
-  - Alarm: Stufe, Empfindlichkeit, PIN ändern, NFC-Tag anlernen, Protokoll
-  - Einstellungen: Gänge anlernen, Schaltblitz, Helligkeit, Startbild-Text, WLAN
-- **Warnfarben:** Kopftemperatur, Spannung unter 12 V oder über 15 V, Glätte unter 3 °C.
-- **WLAN:** Update-Modus nur im Stand über einen eigenen Hotspot.
+- **Seiten aus dem Layout:** Das mitgelieferte Layout „Klar“ hat die Seiten Fahrt, Statistik und eine Nachtversion der Fahrseite. Beliebige weitere Seiten lassen sich im Designer anlegen.
+- **Fest eingebaute Menüs:**
+  - Wartung: Erinnerungen bestätigen
+  - Alarm: scharf/aus, PIN ändern, NFC-Tag anlernen, Protokoll
+  - Einstellungen: Gänge anlernen, Hinweise zur tacho.cfg anzeigen
+  - Übertragung: WLAN für Designer und Firmware-Updates einschalten, Code anzeigen
+- **Warnfarben:** Schwellen je Element im Layout, Grenzwerte für Warnungen in der tacho.cfg.
+- **WLAN:** nur im Stand und nur, solange das Menü Übertragung offen ist.
 
 ---
 
@@ -211,7 +213,7 @@ Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste
 ## 8. Phasen
 
 1. **Display am Schreibtisch:** Demo-Fahransicht, Touch-Test (Code liegt in `firmware/`).
-2. **Oberfläche mit LVGL:** alle Seiten, Startbild, Nachtmodus, Sperrbildschirm mit PIN.
+2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Nachtmodus, Menüs, Sperrbildschirm mit PIN. Designer am PC, Dateiformate und Decoder sind schon fertig.
 3. **I²C-Module am Tisch:** Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
 4. **GPS und Drehzahl:** Drehzahl-Impulse simuliert mit einem zweiten Mikrocontroller.
 5. **Stromversorgung und Alarm:** Schutz-, Selbsthaltungs- und Wächterschaltung, Ruhestrom messen, Alarmton.

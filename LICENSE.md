@@ -5,11 +5,12 @@ Dieses Projekt steht unter zwei Lizenzen, je nach Art des Inhalts.
 | Inhalt | Lizenz |
 |---|---|
 | Firmware (`firmware/`) | [MIT](firmware/LICENSE) |
+| PC-Programm S51 Designer (`designer/`) | [MIT](designer/LICENSE) |
 | Dokumentation, Schaltpläne, CAD-Dateien (`docs/`, `hardware/`, `cad/` und alle übrigen Dateien) | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.de) |
 
 ## Was das bedeutet
 
-**Firmware (MIT):** Der Code darf frei benutzt, verändert und weitergegeben werden, auch kommerziell. Der Copyright-Hinweis und der Lizenztext müssen dabei bleiben.
+**Firmware und Designer (MIT):** Der Code darf frei benutzt, verändert und weitergegeben werden, auch kommerziell. Der Copyright-Hinweis und der Lizenztext müssen dabei bleiben.
 
 **Doku, Schaltpläne, CAD (CC BY-SA 4.0):** Darf frei nachgebaut, verändert und weitergegeben werden, auch kommerziell, unter zwei Bedingungen:
 - **Namensnennung:** Das Projekt als Quelle nennen, mit Link zu diesem Repo.

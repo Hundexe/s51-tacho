@@ -3,3 +3,9 @@
 *.bak
 .DS_Store
 Thumbs.db
+__pycache__/
+*.pyc
+designer/dist/
+designer/build/
+*.spec
+sd-simulator/
