@@ -1,0 +1,244 @@
+# Bauplan S51-Digitaltacho (Version 1.2, Stand 01.10.2026)
+
+Simson S51B, VAPE 12 V mit Batterie, WT32-SC01 Plus (ESP32-S3, 3,5" 480×320, Touch). Handy: iPhone.
+
+**Änderungen**
+- 1.1: Dauerplus mit Wächterschaltung, im Stand bleibt nur die Bewegungserkennung wach.
+- 1.2: Alarm gibt einen Ton aus. Entschärfen mit Zündschlüssel, PIN oder NFC-Tag. iPhone festgelegt.
+
+---
+
+## 1. Entscheidungen auf einen Blick
+
+| Thema | Entscheidung |
+|---|---|
+| Einbauort | Neue Lampenschale aus ASA (3D-Druck), Original-Einsatz Ø 140 mm vorn, Display hinten schräg zum Fahrer, Querformat |
+| Original-Tacho | bleibt am Tachohalter als Zweitanzeige |
+| Design | „Klar“ + automatischer Nachtmodus, Warnfarben, Startbild mit eigenem Schriftzug |
+| Geschwindigkeit | GPS, Hall-Sensor mit 2 Magneten nachrüstbar |
+| Drehzahl | Abgriff am Zündkabel, ohne Eingriff in die VAPE |
+| Bedienung | Lenker-Tasterpod mit 3 Tastern, vorbereitet für Spotify |
+| Strom | Dauerplus. Im Stand alles stromlos, nur ein passiver Erschütterungsschalter bleibt wach |
+| Alarm | Bewegung weckt den Tacho, Lagesensor bestätigt, dann Alarmton über Lautsprecher in der Lampe |
+| Entschärfen | Zündschlüssel, PIN (Touch oder Lenkertaster) oder NFC-Tag, Sicherheitsstufe einstellbar |
+| Handy | iPhone: Musiksteuerung und Songtitel über Bluetooth |
+| Gehäuse | ASA, wasserdichte Stecker, Belüftungsmembran |
+
+---
+
+## 2. Pin-Plan (alle 6 freien GPIOs belegt)
+
+| GPIO | Funktion | Hinweis |
+|---|---|---|
+| 10 | Power-Hold (Ausgang) | hält die Versorgung an, solange der Tacho läuft oder der Alarm prüft |
+| 11 | Hall-Sensor Geschwindigkeit | Interrupt, Zeitmessung zwischen Impulsen (optional) |
+| 12 | Drehzahl vom Zündkabel | über Signalaufbereitung, Interrupt |
+| 13 | I²C SDA | gemeinsamer Bus für alle Module |
+| 14 | I²C SCL | 100 kHz wegen Kabellängen |
+| 21 | GPS RX | UART, 10 Hz |
+
+Bereits auf dem Board belegt und genutzt: SD-Karte (Fahrtenbuch), Audio-Verstärker (Alarmton, Warntöne), RS485 (Reserve).
+
+Die komplette Belegung steht im Code in `firmware/include/pins.h`.
+
+### I²C-Bus
+
+| Modul | Adresse | Aufgabe |
+|---|---|---|
+| MCP23017 | 0x20 | Blinker L/R, Fernlicht, Leerlauf, Zündung an, 3 Taster, Reserve |
+| BH1750 | 0x23 | Umgebungslicht für automatische Helligkeit |
+| PN532 | 0x24 | NFC-Leser zum Entschärfen (optional) |
+| ADS1115 | 0x48 | Bordspannung, 3 Kanäle Reserve |
+| MCP9600 | 0x60 | Zylinderkopftemperatur (Typ K), misst nebenbei die Temperatur in der Lampe |
+| DS3231 | 0x68 | Uhr mit Knopfzelle |
+| LSM6DS3 | 0x6A | Schräglage, bestätigt beim Alarm echte Bewegung |
+| BME280 | 0x76 | Außentemperatur, Glättewarnung |
+
+---
+
+## 3. Sensoren im Detail
+
+### 3.1 Geschwindigkeit
+- **GPS:** u-blox-M10-Modul mit 10 Hz, sitzt in der Lampenschale. Liefert auch Uhrzeit und Strecke fürs Fahrtenbuch.
+- **Hall (nachrüstbar):** Näherungssensor NJK-5002C (M12, NPN, 6–36 V, wasserdicht) an der Gabel, 2 Neodym-Magnete an Nabe oder Bremstrommel.
+- **Automatische Kalibrierung:** Mit GPS lernt der Tacho den Radumfang selbst.
+- Start nur mit GPS, der Original-Tacho bleibt als Rückfallebene.
+
+### 3.2 Drehzahl (VAPE)
+- 3–5 Windungen isolierter Draht um das Zündkabel (nicht abisolieren).
+- Aufbereitung: Widerstand, Klemmdioden, RC-Filter, Schmitt-Trigger (74LVC1G17), dann an GPIO 12.
+- Software: 1 Impuls = 1 Umdrehung, Totzeit gegen Doppelimpulse, bis ca. 12.000 U/min.
+- **Nicht** am weißen Geberkabel zur Zündspule abgreifen.
+
+### 3.3 Kontrollleuchten und Zündung
+- 12-V-Signale (Blinker L/R, Fernlicht, Leerlauf, Zündungsplus Kl. 15) über eine Optokoppler-Platine (PC817, 12 V) auf den MCP23017.
+- Leerlauf: Die Kontrolllampe schaltet über den Leerlaufschalter nach Masse, der Optokoppler wird passend dazu angeschlossen.
+
+### 3.4 Temperaturen
+- **Zylinderkopf:** Thermoelement-Ring Typ K für 14-mm-Zündkerze, Leitung bis zum MCP9600 in der Lampe.
+- **Außen:** BME280 in einer belüfteten Kammer an der Unterseite der Lampenschale, weg von der Birne.
+- **Gehäuse:** kommt gratis vom MCP9600.
+
+### 3.5 Bedienung, Musik und iPhone
+- **Tasterpod:** 3× IP67-Taster in einer Schelle für den 22-mm-Lenker.
+  - Taster 1: kurz Seite wechseln, lang Trip zurücksetzen.
+  - Taster 2 und 3: Play/Pause und nächster Titel.
+  - Alle drei zusammen: PIN-Eingabe (siehe 4.4).
+- **Musiksteuerung:** Der ESP32-S3 meldet sich per Bluetooth LE beim iPhone als Medien-Fernbedienung an.
+- **Songtitel:** Das iPhone stellt Titel und Interpret über seine Medien-Schnittstelle (Apple Media Service) bereit. Der Tacho kann sie anzeigen, ohne dass du eine App brauchst.
+
+---
+
+## 4. Stromversorgung und Alarm
+
+### 4.1 Prinzip
+Der Tacho hängt dauerhaft an der Batterie. Im Stand ist alles stromlos, nur ein passiver Erschütterungsschalter (Federkontakt, braucht selbst keinen Strom) bleibt wach. Ein Board, das nur schläft, würde geschätzt 5–15 mA ziehen und eine kleine Batterie über Wochen leeren, deshalb diese Lösung.
+
+### 4.2 Aufbau
+
+```
+Batterie +12 V (Dauerplus)
+  └─ Sicherung 2 A
+      └─ Verpolschutz + TVS-Diode (SMBJ18A)
+          └─ Elektronischer Schalter (P-MOSFET)
+               ├─ EIN durch:  Zündungsplus (Kl. 15)
+               │          ODER Erschütterungsschalter (kurzer Impuls, über Kondensator verlängert)
+               │          ODER Power-Hold (GPIO 10)
+               └─ Step-down 12 → 5 V (Eingang bis ≥ 36 V, ≥ 1 A)
+                    └─ WT32-SC01 Plus + Module
+```
+
+### 4.3 Ablauf
+
+**Fahren**
+1. Zündung an: Der Schalter geht an, der Tacho startet und setzt Power-Hold.
+2. Je nach Sicherheitsstufe gleich Fahransicht oder erst Entsperren (4.4).
+3. Zündung aus: Kilometerstand und Fahrt speichern, Alarm schärfen, Power-Hold freigeben. Alles stromlos.
+
+**Alarm**
+1. Jemand bewegt das Moped. Der Erschütterungsschalter schaltet die Versorgung ein.
+2. Der Tacho startet ohne Display und erkennt an der fehlenden Zündung, dass der Alarm ihn geweckt hat.
+3. Der Lagesensor prüft etwa 2 s, ob sich das Moped wirklich bewegt oder neigt.
+4. Echte Bewegung: Alarmton, z. B. 30 s lang, danach erneut scharf.
+5. Fehlauslösung: sofort wieder aus. Empfindlichkeit einstellbar, nach mehreren Fehlauslösungen pro Stunde kurze Pause.
+6. Jede Auslösung landet mit Uhrzeit im Alarm-Protokoll.
+
+**Alarmton**
+- Über den Audio-Verstärker des Boards (NS4168, 2,5 W an 4 Ω) und einen wasserfesten 4-Ω-Lautsprecher (ca. 40–50 mm) in der Lampenschale.
+- Deutlich hörbar in der Nähe, aber keine Sirene. Wenn es lauter sein soll: 12-V-Piezosirene über einen freien MCP23017-Ausgang und einen MOSFET nachrüsten.
+
+### 4.4 Entschärfen und Sicherheitsstufen
+
+| Stufe | Zündung an mit Schlüssel | Entsperren |
+|---|---|---|
+| 1 Komfort | entschärft sofort | nicht nötig |
+| 2 Sicher (Vorschlag) | startet den Tacho, Sperrbildschirm erscheint | innerhalb von 30 s PIN oder NFC-Tag, sonst Alarm |
+
+Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt deine PIN nicht und hat deinen Tag nicht.
+
+**Entsperr-Wege**
+- **PIN am Display:** Ziffernblock auf dem Touchscreen, 4–6 Stellen.
+- **PIN per Lenkertaster:** eine Tastenfolge aus den 3 Tastern, z. B. 1-3-3-2. Funktioniert mit Handschuhen und bei Regen.
+- **NFC-Tag (optional):** PN532-Leser unsichtbar hinter der Lampenschale, Tag am Schlüsselbund kurz hinhalten.
+- Nach 3 falschen PINs: 1 Minute Sperre und Alarmton.
+
+### 4.5 Strombilanz (geschätzt)
+
+| Zustand | Verbrauch |
+|---|---|
+| Fahrt, volle Helligkeit | ca. 1,2 W, an 12 V gut 100 mA |
+| Abgestellt, Alarm scharf | praktisch 0 (Leckstrom des MOSFET) |
+| Alarmprüfung | einige Sekunden wie beim Fahren, ohne Display |
+
+---
+
+## 5. Lampenschale
+
+- **Vorn:** Aufnahme für Original-Scheinwerfereinsatz Ø 140 mm und Lampenring.
+- **Hinten:** Display-Aufnahme, Querformat, ca. 15–25° nach oben geneigt, Glasfront mit TPU- oder Silikondichtung.
+- **Oben:** kleine Sonnenblende, mitgedruckt.
+- **Innen:**
+  - Hitzeschild (Alu-Blech) zwischen Birne und Elektronik
+  - Platz für Platine, GPS, Module und gegebenenfalls vorhandene Kabelverbindungen
+  - Lautsprecher mit Öffnung nach unten (Wasser läuft ab)
+  - Erschütterungsschalter fest verschraubt
+  - NFC-Leser direkt hinter einer dünnen Wandstelle (optional)
+  - Belüftungsmembran gegen Beschlagen
+- **Unten:** zwei wasserdichte Stecker (z. B. Deutsch DT oder Superseal) plus eine Kabelverschraubung für das Thermoelement.
+- **Befestigung:** an den originalen Lampenhaltern der Gabel.
+- **Fenster:** für den Lichtsensor neben dem Display.
+- **Material:** ASA, Wandstärke ≥ 3 mm, 4–5 Perimeter.
+
+**Was ich brauche:** Fotos der Lampe von hinten und von der Seite, Fotos der Halterung an der Gabel, Abstand der Befestigungspunkte, Tiefe des Einsatzes, und ob in der Lampe Kabelverbindungen sitzen.
+
+---
+
+## 6. Software
+
+- **Basis:** PlatformIO mit Arduino-Framework, LovyanGFX als Display-Treiber, LVGL 9 für die Oberfläche (ab Phase 2).
+- **Startmodus:** Zuerst wird geprüft, warum der Tacho an ist. Zündung → Entsperren oder Fahransicht. Keine Zündung → Alarmprüfung ohne Display.
+- **Tasks:** Sensoren (Interrupts, GPS, I²C mit 20 Hz), Oberfläche (30 fps), Speicher und Fahrtenbuch, Bluetooth.
+- **Speicher:** 16 MB Flash mit zwei App-Bereichen für Updates per WLAN, dazu Dateisystem für Einstellungen.
+- **Kilometerstand:** im NVS mit Verschleißausgleich, alle 100 m und beim Abschalten.
+- **Seiten:**
+  - Fahrt („Klar“), mit Songtitel-Zeile wenn Musik läuft
+  - Statistik: Trip A/B, Max, Ø, Fahrzeit, Tank-km
+  - Motor: Kopftemperatur, Spannung, Gehäusetemperatur
+  - Lage: Schräglage aktuell und Maximum
+  - Wartung
+  - Alarm: Stufe, Empfindlichkeit, PIN ändern, NFC-Tag anlernen, Protokoll
+  - Einstellungen: Gänge anlernen, Schaltblitz, Helligkeit, Startbild-Text, WLAN
+- **Warnfarben:** Kopftemperatur, Spannung unter 12 V oder über 15 V, Glätte unter 3 °C.
+- **WLAN:** Update-Modus nur im Stand über einen eigenen Hotspot.
+
+---
+
+## 7. Einkaufsliste
+
+- [ ] Step-down 12→5 V (Eingang ≥ 36 V, ≥ 1 A), z. B. Pololu D36V28F5
+- [ ] Flachsicherung 2 A + Halter, TVS-Diode SMBJ18A, P-MOSFET ≥ 30 V, Kleinteile für Selbsthaltung
+- [ ] Passive Erschütterungsschalter (z. B. SW-18010P), ein paar zum Testen
+- [ ] Wasserfester Lautsprecher 4 Ω, ca. 40–50 mm, 2–3 W
+- [ ] Optokoppler-Platine 4- oder 8-Kanal, 12 V (PC817)
+- [ ] MCP23017-Modul
+- [ ] ADS1115-Modul
+- [ ] MCP9600-Modul + Thermoelement-Ring Typ K, 14 mm
+- [ ] DS3231-Modul + CR2032 (Lade-Diode bzw. -Widerstand auslöten)
+- [ ] LSM6DS3-Modul
+- [ ] BME280-Modul
+- [ ] BH1750-Modul
+- [ ] GPS-Modul u-blox M10 mit Antenne
+- [ ] 74LVC1G17 (Schmitt-Trigger), Dioden, Widerstände, Kondensatoren
+- [ ] 3× Taster IP67, Ø 12 mm
+- [ ] 2 wasserdichte Steckverbinder (8–12-polig) + 1 Kabelverschraubung
+- [ ] Belüftungsmembran
+- [ ] Lochrasterplatine
+- [ ] Optional: PN532-NFC-Modul + NFC-Tag (NTAG215 o. ä.)
+- [ ] Optional später: NJK-5002C Hall-Sensor + 2 Neodym-Magnete
+
+---
+
+## 8. Phasen
+
+1. **Display am Schreibtisch:** Demo-Fahransicht, Touch-Test (Code liegt in `firmware/`).
+2. **Oberfläche mit LVGL:** alle Seiten, Startbild, Nachtmodus, Sperrbildschirm mit PIN.
+3. **I²C-Module am Tisch:** Uhr, Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
+4. **GPS und Drehzahl:** Drehzahl-Impulse simuliert mit einem zweiten Mikrocontroller.
+5. **Stromversorgung und Alarm:** Schutz-, Selbsthaltungs- und Wächterschaltung, Ruhestrom messen, Alarmton.
+6. **Provisorischer Einbau:** Probefahrten, Kalibrierung, Gänge anlernen, Alarm-Empfindlichkeit.
+7. **Lampenschale:** konstruieren, drucken, abdichten, endgültiger Einbau.
+8. **Extras:** Wartung, Fahrtenbuch, WLAN-Updates, iPhone-Musik, NFC, Hall-Sensor.
+
+---
+
+## 9. Offene Punkte
+
+- [ ] Fotos und Maße von Lampe und Gabelhalterung, Kabelverbindungen in der Lampe?
+- [ ] Sicherheitsstufe 1 oder 2 als Standard?
+- [ ] Hall gleich mit einbauen oder erst nur GPS?
+
+## Eigene Ideen aus dem Planer
+- I²C-Erweiterung bei Pin-Mangel → umgesetzt (MCP23017 + ADS1115)
+- Spotify-Bedienelement → Tasterpod mit 3 Tastern, Musiksteuerung über Bluetooth
+- Dauerstrom mit Bewegungsalarm → Wächterschaltung (4.1)
+- PIN zum Entsperren → Touch-Ziffernblock und Tastenfolge am Lenker (4.4)
