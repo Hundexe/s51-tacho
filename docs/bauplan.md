@@ -48,7 +48,7 @@ Die komplette Belegung steht im Code in `firmware/include/pins.h`.
 
 | Modul | Adresse | Aufgabe |
 |---|---|---|
-| MCP23017 | 0x20 | Blinker L/R, Fernlicht, Leerlauf, Zündung an, 3 Taster, Reserve |
+| MCP23017 | 0x20 | Blinker L/R, Fernlicht, Leerlauf, Zündung an, Licht an, 3 Taster, Reserve |
 | BH1750 | 0x23 | Umgebungslicht für automatische Helligkeit |
 | PN532 | 0x24 | NFC-Leser zum Entschärfen (optional) |
 | ADS1115 | 0x48 | Bordspannung, 3 Kanäle Reserve |
@@ -63,18 +63,18 @@ Die komplette Belegung steht im Code in `firmware/include/pins.h`.
 
 ### 3.1 Geschwindigkeit
 - **GPS:** u-blox-M10-Modul mit 10 Hz, sitzt in der Lampenschale. Liefert auch Uhrzeit und Strecke fürs Fahrtenbuch.
-- **Hall (nachrüstbar):** Näherungssensor NJK-5002C (M12, NPN, 6–36 V, wasserdicht) an der Gabel, 2 Neodym-Magnete an Nabe oder Bremstrommel.
+- **Hall (nachrüstbar):** Näherungssensor NJK-5002C (M12, NPN, 6–36 V, wasserdicht) an der Gabel, 2 Neodym-Magnete an Nabe oder Bremstrommel. Das Signal läuft über einen Kanal der Optokoppler-Platine an GPIO 11, weil der Sensor mit 12 V arbeitet.
 - **Automatische Kalibrierung:** Mit GPS lernt der Tacho den Radumfang selbst.
 - Start nur mit GPS, der Original-Tacho bleibt als Rückfallebene.
 
 ### 3.2 Drehzahl (VAPE)
 - 3–5 Windungen isolierter Draht um das Zündkabel (nicht abisolieren).
-- Aufbereitung: Widerstand, Klemmdioden, RC-Filter, Schmitt-Trigger (74LVC1G17), dann an GPIO 12.
+- Aufbereitung: Widerstand, Klemmdioden, RC-Filter, Schmitt-Trigger (74HC14, mit 3,3 V versorgt), dann an GPIO 12.
 - Software: 1 Impuls = 1 Umdrehung, Totzeit gegen Doppelimpulse, bis ca. 12.000 U/min.
 - **Nicht** am weißen Geberkabel zur Zündspule abgreifen.
 
 ### 3.3 Kontrollleuchten und Zündung
-- 12-V-Signale (Blinker L/R, Fernlicht, Leerlauf, Zündungsplus Kl. 15) über eine Optokoppler-Platine (PC817, 12 V) auf den MCP23017.
+- 12-V-Signale (Blinker L/R, Fernlicht, Leerlauf, Zündungsplus Kl. 15, Licht an) über eine 8-Kanal-Optokoppler-Platine (PC817, 12 V) auf den MCP23017. Die Ausgangsseite der Platine wird mit 3,3 V versorgt.
 - Leerlauf: Die Kontrolllampe schaltet über den Leerlaufschalter nach Masse, der Optokoppler wird passend dazu angeschlossen.
 
 ### 3.4 Temperaturen
@@ -102,13 +102,15 @@ Der Tacho hängt dauerhaft an der Batterie. Im Stand ist alles stromlos, nur ein
 ```
 Batterie +12 V (Dauerplus)
   └─ Sicherung 2 A
-      └─ Verpolschutz + TVS-Diode (SMBJ18A)
+      └─ Verpolschutz (Schottky-Diode) + TVS-Diode (P6KE20A)
           └─ Elektronischer Schalter (P-MOSFET)
                ├─ EIN durch:  Zündungsplus (Kl. 15)
                │          ODER Erschütterungsschalter (kurzer Impuls, über Kondensator verlängert)
                │          ODER Power-Hold (GPIO 10)
-               └─ Step-down 12 → 5 V (Eingang bis ≥ 36 V, ≥ 1 A)
-                    └─ WT32-SC01 Plus + Module
+               └─ Step-down 12 → 5 V (LM2596HV, auf 5,0 V eingestellt)
+                    ├─ WT32-SC01 Plus (über Pin 1 des Erweiterungssteckers)
+                    └─ Regler 3,3 V (LD1117V33)
+                         └─ alle I²C-Module, GPS, Ausgangsseite der Optokoppler
 ```
 
 ### 4.3 Ablauf

@@ -1,83 +1,291 @@
-# Stückliste
+# Stückliste und Einkaufsliste
 
-Alles, was für den Nachbau gekauft werden muss. Die Spalte „Phase“ sagt, ab wann das Teil gebraucht wird (siehe Abschnitt 8 in [bauplan.md](bauplan.md)).
+Alles, was für den kompletten Nachbau gekauft werden muss, inklusive Stecker, Kabel, Schrauben und Werkzeug. Zu jedem Teil steht, wofür genau es gebraucht wird, und ein Suchbegriff für AliExpress. Dort ist alles aus dieser Liste erhältlich, die Suche funktioniert auf Englisch am besten.
 
-Modul-Bezeichnungen sind die üblichen Namen der fertigen Breakout-Platinen, wie sie bei Elektronikhändlern und Marktplätzen angeboten werden. Wo ein Hersteller genannt ist, funktioniert auch ein gleichwertiges Teil.
+**So liest man die Liste**
+- **Phase** sagt, ab wann ein Teil gebraucht wird (Abschnitt 8 in [bauplan.md](bauplan.md)). Wer schrittweise baut, bestellt zuerst Phase 1–4.
+- Angebote auf AliExpress wechseln oft, deshalb stehen hier Suchbegriffe statt Links. Beim Kauf auf die genannten Eckdaten achten (Spannung, Polzahl, Maße).
+- Billige Module schwanken in der Qualität. Bei Teilen unter ein paar Euro lohnt es sich, gleich 2 Stück zu nehmen.
+- Kabelquerschnitte werden dort meist in AWG angegeben: 0,75 mm² ≈ 18 AWG, 0,5 mm² ≈ 20 AWG, 0,25 mm² ≈ 24 AWG.
 
-**Stand:** Die Schaltungen in Phase 3–5 sind noch nicht aufgebaut und getestet. Bis dahin kann sich diese Liste ändern.
+**Stand:** Die Schaltungen ab Phase 3 sind geplant, aber noch nicht aufgebaut. Einzelne Teile können sich noch ändern, Änderungen stehen dann in der Git-Historie dieser Datei.
 
-## Hauptteile
+---
 
-| Menge | Teil | Zweck | Phase | Hinweis |
-|---|---|---|---|---|
-| 1 | WT32-SC01 Plus (ZX3D50CE08S-USRC-4832), Variante mit 16 MB Flash | Display und Rechner | 1 | Datenblatt: [datenblaetter.md](datenblaetter.md) |
-| 1 | USB-C-Kabel (Daten) | Flashen | 1 | reine Ladekabel funktionieren nicht |
+## 1. Rechner und Display
 
-## Sensoren und Module (I²C)
+- [ ] **1× WT32-SC01 Plus**, Variante mit 16 MB Flash (N16R2) · Phase 1
+  Das Herz des Tachos: Display mit Touch, ESP32-S3-Prozessor, Lautsprecher-Verstärker und SD-Kartenslot auf einer Platine. Hier läuft die gesamte Software.
+  Suche: `WT32-SC01 Plus ESP32-S3 3.5 inch`
+- [ ] **1× USB-C-Datenkabel** · Phase 1
+  Zum Aufspielen der Software vom PC. Muss Daten übertragen können, reine Ladekabel gehen nicht.
+  Suche: `USB C data cable 1m`
+- [ ] **1× microSD-Karte 8–32 GB** · Phase 8
+  Speichert das Fahrtenbuch (jede Fahrt als Datei, mit GPS-Strecke). Wird FAT32 formatiert.
+  Suche: `micro SD card 16GB`
 
-| Menge | Teil | Zweck | Phase | Hinweis |
-|---|---|---|---|---|
-| 1 | MCP23017-Modul | Ein-/Ausgänge für Kontrollleuchten, Zündung, Taster | 3 | Adresse 0x20 (A0–A2 auf GND) |
-| 1 | ADS1115-Modul | Bordspannung messen | 3 | Adresse 0x48 (ADDR auf GND) |
-| 1 | MCP9600-Modul | Thermoelement-Wandler für Zylinderkopftemperatur | 3 | Adresse 0x60 |
-| 1 | Thermoelement-Ring Typ K, 14 mm | Zylinderkopftemperatur unter der Zündkerze | 3 | Ring passt unter eine Zündkerze mit 14-mm-Gewinde |
-| 1 | DS3231-Modul + Knopfzelle CR2032 | Uhr | 3 | Viele Module haben eine Ladeschaltung für LIR2032-Akkus. Mit CR2032 die Lade-Diode oder den Widerstand davor auslöten |
-| 1 | LSM6DS3-Modul | Schräglage, Bestätigung beim Alarm | 3 | Adresse 0x6A. Kein MPU6050 nehmen, der kollidiert mit der Uhr (0x68) |
-| 1 | BME280-Modul | Außentemperatur | 3 | Adresse 0x76. Ein BMP280 geht auch, misst aber keine Luftfeuchte |
-| 1 | BH1750-Modul | Umgebungslicht | 3 | Adresse 0x23 |
-| 1 | GPS-Modul mit u-blox M10 und Antenne | Geschwindigkeit, Uhrzeit, Strecke | 4 | 3,3-V-tauglicher UART-Ausgang |
+## 2. Kabel für die Stecker am Board
 
-## Eingänge und Signalaufbereitung
+Das Board hat Stecker im Raster 1,25 mm (Molex PicoBlade, oft „MX1.25“ genannt). **Nicht** mit JST-GH oder JST-SH verwechseln, die passen nicht. Fertig gecrimpte Kabel kaufen, das Crimpen der Kontakte ist sehr fummelig.
 
-| Menge | Teil | Zweck | Phase | Hinweis |
-|---|---|---|---|---|
-| 1 | Optokoppler-Platine 4- oder 8-Kanal, 12 V, mit PC817 | 12-V-Signale (Blinker, Fernlicht, Leerlauf, Zündung) sicher an den MCP23017 | 3 | Eingangsseite für 12 V ausgelegt |
-| 1 | 74LVC1G17 (Schmitt-Trigger) | Drehzahlsignal säubern | 4 | gibt es auch als Adapterplatine |
-| – | Widerstände, Dioden (z. B. BAT54S), Kondensatoren | Schutz und Filter für das Drehzahlsignal | 4 | Werte folgen mit dem Schaltplan in `hardware/` |
-| 1 m | isolierter Draht, dünn | Abgriff am Zündkabel | 4 | 3–5 Windungen um das Zündkabel |
+- [ ] **1× PicoBlade-Kabel 8-polig**, einseitig mit Buchse, 15–20 cm · Phase 3
+  Verbindet den Erweiterungsstecker des Boards mit der eigenen Platine. Darüber laufen 5 V Versorgung, Masse und die 6 freien Pins (Drehzahl, Hall, I²C-Bus, GPS, Power-Hold).
+  Suche: `Molex 1.25mm 8 pin cable single head`
+- [ ] **1× PicoBlade-Kabel 2-polig**, einseitig mit Buchse · Phase 5
+  Schließt den Lautsprecher für den Alarmton an den Lautsprecher-Stecker des Boards an.
+  Suche: `Molex 1.25mm 2 pin cable single head`
+- [ ] **1× PicoBlade-Kabel 7-polig**, einseitig mit Buchse · optional
+  Nur nötig, falls sich das Board per USB-C nicht flashen lässt. Damit wird BOOT (Pin 6) auf Masse gelegt.
+  Suche: `Molex 1.25mm 7 pin cable single head`
 
-## Stromversorgung und Alarm
+## 3. Sensoren und Module
 
-| Menge | Teil | Zweck | Phase | Hinweis |
-|---|---|---|---|---|
-| 1 | Step-down 12 V → 5 V, Eingang bis mind. 36 V, mind. 1 A | Versorgung | 5 | z. B. Pololu D36V28F5 |
-| 1 | Flachsicherung 2 A + fliegender Halter | Absicherung am Dauerplus | 5 | |
-| 1 | TVS-Diode SMBJ18A | Schutz vor Spannungsspitzen | 5 | |
-| 1 | P-Kanal-MOSFET, mind. 30 V, Logic-Level | Elektronischer Hauptschalter | 5 | genaues Bauteil folgt mit dem Schaltplan |
-| – | Kleinteile für Selbsthaltung (NPN-Transistor, Dioden, Widerstände, Kondensator) | Schalter-Logik | 5 | Werte folgen mit dem Schaltplan |
-| 3 | Passiver Erschütterungsschalter (Federkontakt, z. B. SW-18010P) | weckt den Tacho bei Bewegung | 5 | mehrere Empfindlichkeiten testen |
-| 1 | Lautsprecher 4 Ω, 2–3 W, ca. 40–50 mm, wasserfest | Alarm- und Warntöne | 5 | an den Lautsprecher-Stecker des Boards (MX1.25, 2-polig) |
+Alle Module werden mit **3,3 V** betrieben (Regler in Abschnitt 5.3). So kommt nie ein 5-V-Pegel an die Pins des ESP32, die das nicht vertragen.
 
-## Bedienung
+- [ ] **1× MCP23017-Modul** · Phase 3
+  Port-Erweiterung mit 16 Ein-/Ausgängen über I²C. Liest Blinker, Fernlicht, Leerlauf, Zündung, Licht und die drei Lenkertaster ein, weil das Board selbst nur 6 freie Pins hat.
+  Suche: `MCP23017 I2C module`
+- [ ] **1× ADS1115-Modul** · Phase 3
+  Präziser Analog-Digital-Wandler. Misst die Bordspannung, um vor Problemen mit Laderegler oder Batterie zu warnen.
+  Suche: `ADS1115 module`
+- [ ] **1× MCP9600-Modul** · Phase 3
+  Wandelt das winzige Signal des Thermoelements in eine Temperatur um. Misst nebenbei die Temperatur im Lampengehäuse.
+  Suche: `MCP9600 thermocouple module`
+- [ ] **1× Thermoelement-Ring Typ K für Zündkerze M14**, Leitung mind. 1,5 m · Phase 3
+  Wird unter die Zündkerze geklemmt und misst die Zylinderkopftemperatur. Warnt, bevor der Zweitakter zu heiß wird und klemmt.
+  Suche: `K type thermocouple spark plug 14mm`
+- [ ] **1× DS3231-Modul** · Phase 3
+  Genaue Uhr für die Zeitanzeige und das Fahrtenbuch. Läuft mit Knopfzelle weiter, auch wenn der Tacho stromlos ist.
+  Suche: `DS3231 RTC module`
+  **Wichtig:** Viele dieser Module haben eine Ladeschaltung für Akkus. Mit einer normalen CR2032 die Diode (oder den Widerstand davor) auf dem Modul auslöten, sonst wird die Zelle beschädigt.
+- [ ] **1× Knopfzelle CR2032** · Phase 3
+  Hält die Uhr am Laufen, wenn das Moped abgestellt ist.
+  Suche: `CR2032 battery`
+- [ ] **1× LSM6DS3-Modul** · Phase 3
+  Lagesensor. Zeigt beim Fahren die Schräglage an und prüft beim Alarm, ob sich das Moped wirklich bewegt. Kein MPU6050 nehmen, der hat dieselbe Adresse wie die Uhr.
+  Suche: `LSM6DS3 module`
+- [ ] **1× BME280-Modul, 3,3-V-Ausführung** · Phase 3
+  Misst die Außentemperatur für die Anzeige und die Glättewarnung unter 3 °C.
+  Suche: `BME280 module 3.3V`
+- [ ] **1× BH1750-Modul (GY-302)** · Phase 3
+  Lichtsensor. Regelt die Displayhelligkeit automatisch und schaltet bei Dunkelheit in den Nachtmodus.
+  Suche: `BH1750 GY-302`
+- [ ] **1× GPS-Modul mit u-blox M10**, UART, 3,3 V, mit Antenne · Phase 4
+  Liefert die Geschwindigkeit, die genaue Uhrzeit und die Strecke fürs Fahrtenbuch. Mit Pufferbatterie oder Supercap findet es nach dem Einschalten schneller Satelliten.
+  Suche: `u-blox M10 GPS module`
 
-| Menge | Teil | Zweck | Phase | Hinweis |
-|---|---|---|---|---|
-| 3 | Drucktaster IP67, Ø 12 mm, Schließer | Tasterpod am Lenker | 3 | |
-| 1 | Kabel 4-adrig, ca. 1 m | Tasterpod zur Lampe | 3 | |
+## 4. Eingänge vom Moped
 
-## Gehäuse und Verkabelung
+- [ ] **1× Optokoppler-Platine, 8 Kanäle, Eingang 12 V, mit PC817** · Phase 3
+  Trennt das 12-V-Bordnetz elektrisch vom empfindlichen 3,3-V-Teil. Spitzen und Störungen vom Moped kommen so nicht bis zum Board. Kanäle: Blinker links, Blinker rechts, Fernlicht, Leerlauf, Zündung, Licht an, Hall-Sensor, 1 Reserve. Die Ausgangsseite wird mit 3,3 V versorgt.
+  Suche: `8 channel optocoupler isolation board 12V PC817`
+- [ ] **1× 74HC14 (DIP-14) und 1× IC-Sockel DIP-14** · Phase 4
+  Schmitt-Trigger. Macht aus dem unsauberen Signal vom Zündkabel saubere Rechteck-Impulse, die der ESP32 zählen kann. Der Sockel erlaubt einen einfachen Tausch.
+  Suche: `74HC14 DIP` und `DIP 14 IC socket`
+- [ ] **2 m isolierter Draht 0,25 mm²** · Phase 4
+  Wird 3–5 Mal um das Zündkabel gewickelt. Nimmt dort ohne Eingriff in die Zündung das Drehzahl-Signal ab.
+  Suche: `24AWG silicone wire`
+- [ ] **1,5 m abgeschirmtes Kabel, 1 Ader + Schirm** · Phase 4
+  Führt das Drehzahl-Signal vom Zündkabel zur Lampe. Der Schirm verhindert, dass die Zündung andere Leitungen stört.
+  Suche: `shielded cable 1 core microphone`
 
-| Menge | Teil | Zweck | Phase | Hinweis |
-|---|---|---|---|---|
-| ca. 300 g | ASA-Filament | Lampenschale, Tasterpod | 7 | Drucker mit geschlossenem Bauraum empfohlen |
-| ca. 50 g | TPU-Filament | Dichtungen | 7 | |
-| 2 | Wasserdichter Steckverbinder 8–12-polig (z. B. Deutsch DT oder Superseal) | Bordnetz und Sensoren | 6 | |
-| 1 | Kabelverschraubung M12 | Thermoelement-Leitung | 6 | |
-| 1 | Belüftungsmembran (M12 oder zum Einkleben) | gegen Beschlagen | 7 | |
-| 1 | Alu-Blech ca. 0,5–1 mm | Hitzeschild zwischen Birne und Elektronik | 7 | |
-| – | Fahrzeugleitung 0,5 mm², Schrumpfschlauch, Lochrasterplatine | Aufbau | 3–6 | |
-| 1 | Original-Scheinwerfereinsatz Ø 140 mm + Lampenring | wird in die neue Schale übernommen | 7 | vorhanden am Fahrzeug |
+## 5. Stromversorgung und Alarm
 
-## Optional
+### 5.1 Anschluss an die Batterie
+- [ ] **1× Flachsicherungshalter (Mini), wasserdicht, fliegend** · Phase 5
+  Sitzt direkt nach der Batterie im Dauerplus. Brennt bei einem Kurzschluss durch, bevor Kabel heiß werden.
+  Suche: `mini blade fuse holder waterproof inline`
+- [ ] **3× Mini-Flachsicherung 2 A** · Phase 5
+  Eine für den Halter, zwei als Ersatz unterwegs.
+  Suche: `mini blade fuse 2A`
+- [ ] **2× Ringkabelschuh, isoliert**, passend zur Batterieschraube (meist M5 oder M6) · Phase 5
+  Schraubt Plus und Masse sauber an die Batteriepole.
+  Suche: `insulated ring terminal M6 18AWG`
 
-| Menge | Teil | Zweck | Hinweis |
-|---|---|---|---|
-| 1 | PN532-NFC-Modul (I²C-Modus) + NFC-Tag (z. B. NTAG215) | Entschärfen per Tag | Adresse 0x24 |
-| 1 | Näherungssensor NJK-5002C (M12, NPN, 6–36 V) + 2 Neodym-Magnete | Geschwindigkeit am Vorderrad | ohne Hall läuft die Geschwindigkeit über GPS |
-| 1 | 12-V-Piezosirene | lauterer Alarm | über MOSFET an freien MCP23017-Ausgang |
+### 5.2 Schutz, Hauptschalter und Wächter
+- [ ] **1× Schottky-Diode SS34 oder 1N5822** · Phase 5
+  Verpolschutz. Wird Plus und Minus vertauscht angeschlossen, sperrt sie und nichts geht kaputt.
+  Suche: `1N5822 diode`
+- [ ] **1× TVS-Diode P6KE20A** · Phase 5
+  Fängt kurze Spannungsspitzen aus dem Bordnetz ab, z. B. beim Abschalten von Licht oder Hupe.
+  Suche: `P6KE20A TVS diode`
+- [ ] **1× P-Kanal-MOSFET IRF4905 (TO-220)** · Phase 5
+  Elektronischer Hauptschalter. Trennt im Stand die komplette Elektronik von der Batterie, damit sie nicht leergezogen wird.
+  Suche: `IRF4905 TO-220`
+- [ ] **2× NPN-Transistor BC547 (oder BC337)** · Phase 5
+  Steuern den Hauptschalter an: Er geht an durch Zündung, durch den Erschütterungsschalter oder durch den ESP32 selbst (Power-Hold).
+  Suche: `BC547 transistor`
+- [ ] **3× Erschütterungsschalter SW-18010P** · Phase 5
+  Ein kleiner Federkontakt, der bei Bewegung kurz schließt und dabei selbst keinen Strom braucht. Weckt im Stand den Tacho für die Alarmprüfung. Drei Stück, um die passende Empfindlichkeit auszuprobieren.
+  Suche: `SW-18010P vibration switch`
 
-## Werkzeug
+### 5.3 Spannungswandler
+- [ ] **1× Step-down-Wandler LM2596HV** (Eingang bis 60 V) · Phase 5
+  Macht aus den 12–14,4 V des Bordnetzes die 5 V für das Board. Die HV-Version hält auch Spannungsspitzen aus. **Vor dem ersten Anschließen** am Poti genau auf 5,0 V einstellen und mit dem Multimeter prüfen.
+  Suche: `LM2596HV step down module`
+- [ ] **1× Spannungsregler LD1117V33 (TO-220)** · Phase 3
+  Macht aus 5 V saubere 3,3 V für alle Sensoren und Module.
+  Suche: `LD1117V33`
+- [ ] **2× Elko 10 µF / 25 V** · Phase 3
+  Gehören an Ein- und Ausgang des 3,3-V-Reglers, damit er stabil läuft. Sind auch im Elko-Sortiment (Abschnitt 9) enthalten.
 
-- Lötkolben, Multimeter (auch zum Messen des Ruhestroms in Phase 5)
-- 3D-Drucker, der ASA drucken kann
-- PC mit VS Code und PlatformIO
+### 5.4 Alarmton
+- [ ] **1× Lautsprecher 4 Ω, 2–3 W, Ø 40–50 mm, wasserfest** · Phase 5
+  Gibt Alarmton und Warntöne aus. Wird an den Lautsprecher-Stecker des Boards angeschlossen.
+  Suche: `waterproof speaker 40mm 4 ohm 3W`
+
+## 6. Bedienung
+
+- [ ] **3× Drucktaster IP67, Ø 12 mm, Schließer** · Phase 3
+  Sitzen im Tasterpod am Lenker. Taster 1: Seite wechseln und Trip zurücksetzen. Taster 2 und 3: Musik (Play/Pause, nächster Titel). Alle drei zusammen: PIN eingeben. Funktionieren auch mit Handschuhen.
+  Suche: `12mm waterproof metal push button momentary`
+- [ ] **1,5 m Steuerleitung 4 × 0,25 mm², ölbeständig** · Phase 3
+  Verbindet den Tasterpod mit der Lampe (3 Taster + gemeinsame Masse).
+  Suche: `4 core cable 24AWG PVC`
+
+## 7. Wasserdichte Stecker an der Lampenschale
+
+Alles, was vom Moped in die Lampe geht, läuft über Steckverbindungen. Dann lässt sich die Lampe zum Arbeiten abnehmen. Sätze mit fertig angecrimpten Kabeln („Pigtail“) kaufen, dann braucht es keine Spezialzange.
+
+- [ ] **1× Deutsch DT 8-polig, Stecker + Buchse mit Kabeln** · Phase 6
+  Bordnetz-Stecker: Dauerplus, Masse, Zündung, Blinker links, Blinker rechts, Fernlicht, Leerlauf, Licht.
+  Suche: `Deutsch DT 8 pin connector with wire`
+- [ ] **1× Deutsch DT 6-polig, Stecker + Buchse mit Kabeln** · Phase 6
+  Sensor-Stecker: Hall-Sensor (3 Adern), Drehzahl (Signal + Schirm), 1 Reserve.
+  Suche: `Deutsch DT 6 pin connector with wire`
+- [ ] **1× Deutsch DT 4-polig, Stecker + Buchse mit Kabeln** · Phase 6
+  Tasterpod-Stecker.
+  Suche: `Deutsch DT 4 pin connector with wire`
+- [ ] **1× Kabelverschraubung M12 × 1,5, IP68**, für Kabel-Ø 3–6 mm · Phase 7
+  Führt die Thermoelement-Leitung dicht ins Gehäuse. Die Leitung bleibt am Stück, weil Stecker das Messsignal verfälschen würden.
+  Suche: `cable gland M12 IP68`
+- [ ] **1× Kabelverschraubung M16 × 1,5, IP68** · Phase 7
+  Führt das vorhandene Scheinwerfer-Kabel dicht in die neue Lampenschale.
+  Suche: `cable gland M16 IP68`
+
+## 8. Kabel und Verbindungen am Moped
+
+- [ ] **Fahrzeugleitung 0,75 mm² (18 AWG): je 5 m rot und schwarz** · Phase 5
+  Dauerplus und Masse von der Batterie zur Lampe.
+  Suche: `18AWG automotive wire`
+- [ ] **Fahrzeugleitung 0,5 mm² (20 AWG): je 3 m in 4 Farben** · Phase 6
+  Signalleitungen von Blinker, Fernlicht, Leerlauf, Zündung und Licht zum Bordnetz-Stecker.
+  Suche: `20AWG automotive wire`
+- [ ] **Silikonlitze 0,25 mm² (24 AWG): 5 Farben** · Phase 3
+  Verdrahtung innerhalb der Lampe zwischen Platine und Modulen. Silikon bleibt auch bei Hitze und Vibration flexibel.
+  Suche: `24AWG silicone wire kit`
+- [ ] **10× Lötverbinder mit Schrumpfschlauch („Solder Seal“)** · Phase 6
+  Zapfen die Signale sauber und wasserdicht vom Kabelbaum des Mopeds ab. Besser als Stromdiebe, die mit der Zeit korrodieren.
+  Suche: `solder seal wire connectors`
+- [ ] **Schrumpfschlauch-Sortiment 3:1 mit Kleber** · Phase 3
+  Isoliert und dichtet Lötstellen.
+  Suche: `heat shrink tube 3:1 adhesive kit`
+- [ ] **3 m Wellrohr NW 7–10, geschlitzt** · Phase 6
+  Schützt die neuen Kabel am Rahmen vor Scheuern und Hitze.
+  Suche: `split corrugated tube 7mm`
+- [ ] **1 Rolle Gewebeband (Kabelbaumband)** · Phase 6
+  Bündelt die Kabel sauber zum Kabelbaum.
+  Suche: `wire harness cloth tape`
+- [ ] **Kabelbinder schwarz, UV-beständig, Sortiment** · Phase 6
+  Befestigt Kabel und Wellrohr am Rahmen.
+  Suche: `UV resistant cable ties black`
+
+## 9. Platine und Kleinteile
+
+- [ ] **2× Lochrasterplatine (Streifenraster) ca. 100 × 80 mm** · Phase 3
+  Trägt Stromversorgung, Drehzahl-Aufbereitung und steckbare Module. Eine für Tischtests, eine für den Einbau.
+  Suche: `stripboard 10x8cm`
+- [ ] **Buchsenleisten 2,54 mm, 3× 40-polig** · Phase 3
+  Die Module werden aufgesteckt statt eingelötet, so lassen sie sich einzeln tauschen.
+  Suche: `female pin header 2.54 40pin`
+- [ ] **Stiftleisten 2,54 mm, 3× 40-polig** · Phase 3
+  Für die Module, falls nicht beigelegt, und für Messpunkte.
+  Suche: `male pin header 2.54 40pin`
+- [ ] **Schraubklemmen Raster 5 mm, je 5× 2- und 3-polig** · Phase 3
+  Anschlüsse für die dickeren Kabel auf der Platine.
+  Suche: `PCB screw terminal 5mm 2pin 3pin`
+- [ ] **Widerstandssortiment 1/4 W (10 Ω–1 MΩ)** · Phase 3
+  Für Spannungsteiler (Bordspannung), Pull-ups, Schutz der Eingänge und die Schalter-Logik.
+  Suche: `resistor kit 1/4W`
+- [ ] **Keramikkondensator-Sortiment (10 pF–100 nF)** · Phase 3
+  Entstörung und Filter, z. B. am Drehzahl-Eingang und an jedem IC.
+  Suche: `ceramic capacitor kit`
+- [ ] **Elko-Sortiment (1–470 µF, mind. 25 V)** · Phase 3
+  Glättung der Versorgung und der Zeitkondensator für den Erschütterungsschalter.
+  Suche: `electrolytic capacitor kit 25V`
+- [ ] **Dioden: 10× 1N4148, 10× 1N4007** · Phase 3
+  1N4148 schützen den Drehzahl-Eingang und verknüpfen die Einschalt-Signale. 1N4007 für Schutz in der Versorgung.
+  Suche: `1N4148` und `1N4007`
+- [ ] **Abstandsbolzen-Sortiment M3 und M2,5** · Phase 7
+  Befestigen Platine und Module im Gehäuse, ohne dass Lötstellen aufliegen.
+  Suche: `M3 M2.5 nylon standoff kit`
+
+## 10. Gehäuse und Halter (3D-Druck)
+
+- [ ] **1 kg ASA-Filament, schwarz** · Phase 7
+  Material für Lampenschale, Tasterpod und Halter. UV- und wetterfest, bleicht nicht aus und hält mehr Wärme aus als PLA oder PETG.
+  Suche: `ASA filament 1.75mm black`
+- [ ] **250 g TPU-Filament 95A** · Phase 7
+  Gummiartige Dichtungen für Displayrahmen und Deckel.
+  Suche: `TPU filament 95A 1.75mm`
+- [ ] **20× Gewindeeinsätze M3 zum Einschmelzen** · Phase 7
+  Werden mit dem Lötkolben ins Druckteil gedrückt. Ergeben stabile Metallgewinde, die oft geöffnet werden können.
+  Suche: `M3 heat set insert`
+- [ ] **Edelstahl-Schrauben M3: je 10× 8, 12, 16 mm** · Phase 7
+  Gehäuse, Deckel, Lenkerschelle und Befestigung an den Lampenhaltern der Gabel.
+  Suche: `M3 stainless button head screw kit`
+- [ ] **4× Schrauben M2 × 6 mm, Edelstahl** · Phase 7
+  Halten das Display im Gehäuse (Befestigungslöcher Ø 2,3 mm am Displayrahmen).
+  Suche: `M2 stainless screw kit`
+- [ ] **1× Druckausgleichselement M12 × 1,5** · Phase 7
+  Lässt Luft, aber kein Wasser durch. Verhindert, dass das Display von innen beschlägt, wenn sich das Gehäuse erwärmt und abkühlt.
+  Suche: `M12 breather vent waterproof`
+- [ ] **1× Alu-Blech 0,5–1 mm, ca. 100 × 100 mm** · Phase 7
+  Hitzeschild zwischen Scheinwerferbirne und Elektronik.
+  Suche: `aluminum sheet 1mm 100x100`
+- [ ] **1× Doppelseitiges Klebeband, Typ VHB** · Phase 7
+  Hält GPS-Antenne und Lautsprecher vibrationsfest im Gehäuse.
+  Suche: `VHB double sided tape`
+- [ ] **1× Neutralvernetzendes Silikon, transparent** · Phase 7
+  Dichtet Kabelführungen und Fugen ab. „Neutralvernetzend“, weil saures Silikon Elektronik angreift.
+  Suche: `neutral cure silicone sealant`
+- [ ] **1× Moosgummi 2 mm, selbstklebend** · Phase 7
+  Zwischen Tasterpod-Schelle und Lenker, damit nichts verrutscht oder klappert.
+  Suche: `EVA foam sheet 2mm adhesive`
+
+Vom Moped übernommen, nicht neu kaufen: Scheinwerfereinsatz Ø 140 mm mit Lampenring und Haltefeder.
+
+## 11. Optional
+
+- [ ] **PN532-NFC-Modul (V3) + 2× NFC-Schlüsselanhänger NTAG215**
+  Entschärfen des Alarms durch kurzes Hinhalten des Anhängers an die Lampe.
+  Suche: `PN532 NFC module V3` und `NTAG215 key fob`
+- [ ] **Näherungssensor NJK-5002C** (M12, NPN, Schließer, 6–36 V) **+ 2× Neodym-Magnet 10 × 3 mm + 2K-Epoxidkleber**
+  Misst die Geschwindigkeit direkt am Vorderrad, schneller als GPS und auch im Tunnel.
+  Suche: `NJK-5002C hall sensor` und `neodymium magnet 10x3mm`
+- [ ] **12-V-Piezosirene, wasserfest + 1× N-Kanal-MOSFET IRLZ44N**
+  Deutlich lauterer Alarm als der Lautsprecher.
+  Suche: `12V piezo siren waterproof` und `IRLZ44N`
+
+## 12. Werkzeug und Hilfsmittel
+
+Wird nicht verbaut, aber gebraucht.
+
+- [ ] **Lötstation und Lötzinn 0,8 mm** · zum Aufbau der Platine
+  Suche: `soldering station` und `solder wire 0.8mm`
+- [ ] **Multimeter** · Spannungen prüfen, Step-down auf 5,0 V einstellen, Ruhestrom messen
+  Suche: `digital multimeter`
+- [ ] **Abisolierzange** · Kabel sauber abisolieren
+  Suche: `automatic wire stripper`
+- [ ] **Seitenschneider** · Kabel und Bauteilbeine kürzen
+  Suche: `flush cutter`
+- [ ] **Crimpzange für isolierte Kabelschuhe** · Ringkabelschuhe an der Batterie
+  Suche: `crimping tool insulated terminals`
+- [ ] **Heißluftföhn** · Schrumpfschlauch und Lötverbinder
+  Suche: `heat gun`
+- [ ] **Steckbrett und Dupont-Kabel-Set** · Tischtests in Phase 3–4, bevor gelötet wird
+  Suche: `breadboard 830 jumper wire kit`
+- [ ] **12-V-Netzteil mind. 1 A (oder Labornetzteil)** · Tischtests der Stromversorgung in Phase 5
+  Suche: `12V 2A power adapter`
+- [ ] **3D-Drucker mit geschlossenem Bauraum** · ASA verzieht sich ohne geschlossenen Bauraum
+- [ ] **PC mit VS Code und PlatformIO** · Software aufspielen

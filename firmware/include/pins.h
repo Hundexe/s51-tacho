@@ -46,7 +46,7 @@ constexpr int PIN_RS485_TX  = 42;
 // Erweiterungsstecker (die 6 freien GPIOs) - Projektbelegung
 // ---------------------------------------------------------------
 constexpr int PIN_POWER_HOLD = 10;  // Ausgang: hält die Versorgung an
-constexpr int PIN_SPEED_HALL = 11;  // Eingang: Hall-Sensor Vorderrad (optional)
+constexpr int PIN_SPEED_HALL = 11;  // Eingang: Hall-Sensor Vorderrad (optional), über Optokoppler
 constexpr int PIN_RPM        = 12;  // Eingang: Drehzahl vom Zündkabel
 constexpr int PIN_I2C_SDA    = 13;  // externer I2C-Bus (Module)
 constexpr int PIN_I2C_SCL    = 14;
@@ -70,7 +70,8 @@ enum Mcp23017Pin : uint8_t {
   MCP_IN_BLINKER_R = 1,   // GPA1
   MCP_IN_FERNLICHT = 2,   // GPA2
   MCP_IN_LEERLAUF  = 3,   // GPA3
-  MCP_IN_ZUENDUNG  = 4,   // GPA4  Kl. 15, zugleich "entschärft"
+  MCP_IN_ZUENDUNG  = 4,   // GPA4  Kl. 15
+  MCP_IN_LICHT     = 5,   // GPA5  Licht an (Nachtmodus)
   MCP_IN_TASTER_1  = 8,   // GPB0  Seite / Trip
   MCP_IN_TASTER_2  = 9,   // GPB1  später Play/Pause
   MCP_IN_TASTER_3  = 10,  // GPB2  später Weiter
