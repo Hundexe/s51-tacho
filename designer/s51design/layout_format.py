@@ -4,11 +4,13 @@ Aufbau der Datei: siehe docs/dateiformat-layout.md.
 Alle Zahlen sind Little-Endian.
 """
 
+import base64
 import struct
 import time
 import zlib
 from dataclasses import dataclass, field
 
+from . import images as I
 from . import schema as S
 
 
@@ -51,7 +53,7 @@ class Widget:
 class Screen:
     id: int = 0
     name: str = "Seite"
-    role: str = "page"           # page | night
+    role: str = "page"           # page | night | startup
     night_of: int = S.NO_PAGE    # bei role == night: Nummer der Tagseite
     bg: str = "#000000"
     widgets: list = field(default_factory=list)
@@ -66,6 +68,7 @@ class Layout:
     created: int = 0
     tool: str = ""
     screens: list = field(default_factory=list)
+    images: list = field(default_factory=list)           # images.Image
     unknown_chunks: list = field(default_factory=list)   # (fourcc, bytes), unverändert durchgereicht
 
 
@@ -190,7 +193,9 @@ def _encode_widget(w):
 def _encode_screen(s):
     if len(s.widgets) > S.MAX_WIDGETS_PER_SCREEN:
         raise LayoutError(f"Seite {s.name!r} hat mehr als {S.MAX_WIDGETS_PER_SCREEN} Elemente")
-    role = S.ROLE_NIGHT if s.role == "night" else S.ROLE_PAGE
+    role = ROLES.get(s.role)
+    if role is None:
+        raise LayoutError(f"Unbekannte Seitenart {s.role!r}")
     name = _str_bytes(s.name)
     out = struct.pack("<BBBB", s.id, role, s.night_of if role == S.ROLE_NIGHT else S.NO_PAGE, 0)
     out += color_to_bytes(s.bg)
@@ -199,6 +204,46 @@ def _encode_screen(s):
     for w in s.widgets:
         out += _encode_widget(w)
     return out
+
+
+ROLES = {"page": S.ROLE_PAGE, "night": S.ROLE_NIGHT, "startup": S.ROLE_STARTUP}
+ROLE_NAMES = {v: k for k, v in ROLES.items()}
+
+
+def _encode_image(img):
+    if not (0 <= img.id < S.NO_IMAGE):
+        raise LayoutError(f"Ungültige Bildnummer {img.id}")
+    if not (1 <= img.width <= S.MAX_IMAGE_SIDE and 1 <= img.height <= S.MAX_IMAGE_SIDE):
+        raise LayoutError(f"Bild {img.name!r} ist zu groß ({img.width}×{img.height})")
+    if len(img.pixels) != img.width * img.height:
+        raise LayoutError(f"Bild {img.name!r}: Pixelanzahl passt nicht zur Größe")
+    fmt, data = I.encode_pixels(img)
+    name = _str_bytes(img.name)
+    flags = S.IMAGE_FLAG_ALPHA if img.has_alpha else 0
+    return (struct.pack("<BBBBHHB", img.id, fmt, flags, 0, img.width, img.height, len(name)) + name
+            + struct.pack("<I", len(data)) + data)
+
+
+def _decode_image(payload):
+    if len(payload) < 9:
+        raise LayoutError("Bild abgeschnitten")
+    img_id, fmt, flags, _, w, h, nlen = struct.unpack_from("<BBBBHHB", payload, 0)
+    pos = 9
+    if pos + nlen + 4 > len(payload):
+        raise LayoutError("Bild abgeschnitten")
+    name = payload[pos:pos + nlen].decode("utf-8", errors="replace")
+    pos += nlen
+    dlen = struct.unpack_from("<I", payload, pos)[0]
+    pos += 4
+    if pos + dlen != len(payload):
+        raise LayoutError(f"Bild {name!r}: Länge der Pixeldaten stimmt nicht")
+    if img_id == S.NO_IMAGE or not (1 <= w <= S.MAX_IMAGE_SIDE and 1 <= h <= S.MAX_IMAGE_SIDE):
+        raise LayoutError(f"Bild {name!r}: ungültige Nummer oder Größe")
+    try:
+        pixels, alpha = I.decode_pixels(fmt, bool(flags & S.IMAGE_FLAG_ALPHA), w, h, payload[pos:])
+    except I.ImageError as e:
+        raise LayoutError(f"Bild {name!r}: {e}")
+    return I.Image(img_id, name, w, h, pixels, alpha)
 
 
 def _chunk(fourcc, payload):
@@ -214,6 +259,13 @@ def encode(layout, tool="S51 Designer"):
     ids = [s.id for s in layout.screens]
     if len(set(ids)) != len(ids):
         raise LayoutError("Seitennummern sind doppelt vergeben")
+    if sum(1 for s in layout.screens if s.role == "startup") > 1:
+        raise LayoutError("Es darf nur eine Startbild-Seite geben")
+    if len(layout.images) > S.MAX_IMAGES:
+        raise LayoutError(f"Höchstens {S.MAX_IMAGES} Bilder erlaubt")
+    img_ids = [i.id for i in layout.images]
+    if len(set(img_ids)) != len(img_ids):
+        raise LayoutError("Bildnummern sind doppelt vergeben")
 
     header = S.MAGIC + struct.pack("<BBHHHI", S.VERSION_MAJOR, S.VERSION_MINOR,
                                    S.HEADER_SIZE, layout.width, layout.height, 0)
@@ -223,6 +275,8 @@ def encode(layout, tool="S51 Designer"):
             _tlv(S.META_CREATED, struct.pack("<I", created)) +
             _tlv(S.META_TOOL, _str_bytes(tool)))
     body = header + _chunk(S.CHUNK_META, meta)
+    for img in layout.images:
+        body += _chunk(S.CHUNK_IMAGE, _encode_image(img))
     for s in layout.screens:
         body += _chunk(S.CHUNK_SCREEN, _encode_screen(s))
     for fourcc, payload in layout.unknown_chunks:
@@ -278,8 +332,8 @@ def _decode_screen(data):
     for _ in range(count):
         wdg, pos = _decode_widget(data, pos, len(data))
         widgets.append(wdg)
-    return Screen(sid, name, "night" if role == S.ROLE_NIGHT else "page",
-                  night_of, bg, widgets)
+    role_name = ROLE_NAMES.get(role, "page")     # unbekannte Art wie eine normale Seite behandeln
+    return Screen(sid, name, role_name, night_of if role_name == "night" else S.NO_PAGE, bg, widgets)
 
 
 def decode(data):
@@ -321,6 +375,10 @@ def decode(data):
                     layout.created = struct.unpack("<I", raw)[0]
                 elif code == S.META_TOOL:
                     layout.tool = raw.decode("utf-8", errors="replace")
+        elif fourcc == S.CHUNK_IMAGE:
+            if len(layout.images) >= S.MAX_IMAGES:
+                raise LayoutError(f"Mehr als {S.MAX_IMAGES} Bilder")
+            layout.images.append(_decode_image(payload))
         elif fourcc == S.CHUNK_SCREEN:
             if len(layout.screens) >= S.MAX_SCREENS:
                 raise LayoutError(f"Mehr als {S.MAX_SCREENS} Seiten")
@@ -363,6 +421,10 @@ def to_dict(layout):
                 "hidden": w.hidden, "locked": w.locked, "props": dict(w.props),
             } for w in s.widgets],
         } for s in layout.screens],
+        "images": [{
+            "id": i.id, "name": i.name, "width": i.width, "height": i.height,
+            "alpha": i.has_alpha, "raw": base64.b64encode(I.encode_raw(i)).decode("ascii"),
+        } for i in layout.images],
         "unknown_chunks": [[f.decode("latin-1"), p.hex()] for f, p in layout.unknown_chunks],
     }
 
@@ -380,6 +442,10 @@ def from_dict(d):
                                       wd.get("hidden", False), wd.get("locked", False),
                                       dict(wd.get("props", {}))))
         layout.screens.append(scr)
+    for idd in d.get("images", []):
+        pixels, alpha = I.decode_pixels(S.IMAGE_FORMAT_RAW, idd.get("alpha", False), idd["width"], idd["height"],
+                                        base64.b64decode(idd["raw"]))
+        layout.images.append(I.Image(idd["id"], idd.get("name", ""), idd["width"], idd["height"], pixels, alpha))
     for fourcc, hexdata in d.get("unknown_chunks", []):
         layout.unknown_chunks.append((fourcc.encode("latin-1"), bytes.fromhex(hexdata)))
     return layout

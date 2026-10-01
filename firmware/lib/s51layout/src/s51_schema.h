@@ -15,16 +15,23 @@ struct Color {
 
 constexpr char kMagic[4] = {'S', '5', '1', 'L'};
 constexpr uint8_t kVersionMajor = 1;
-constexpr uint8_t kVersionMinor = 0;
+constexpr uint8_t kVersionMinor = 1;
 constexpr uint16_t kHeaderSize = 16;
 constexpr uint16_t kDisplayWidth = 480;
 constexpr uint16_t kDisplayHeight = 320;
-constexpr uint32_t kMaxFileSize = 65536;
+constexpr uint32_t kMaxFileSize = 1048576;
 constexpr uint8_t kMaxScreens = 16;
 constexpr uint16_t kMaxWidgetsPerScreen = 96;
 constexpr uint8_t kRolePage = 0;
 constexpr uint8_t kRoleNight = 1;
+constexpr uint8_t kRoleStartup = 2;
 constexpr uint8_t kNoPage = 0xFF;
+constexpr uint8_t kNoImage = 0xFF;
+constexpr uint8_t kMaxImages = 32;
+constexpr uint16_t kMaxImageSide = 480;
+constexpr uint8_t kImageFormatRaw = 1;
+constexpr uint8_t kImageFormatRle = 2;
+constexpr uint8_t kImageFlagAlpha = 0x01;
 constexpr uint8_t kFlagHidden = 0x01;
 constexpr uint8_t kFlagLocked = 0x02;
 constexpr uint8_t kMetaName = 1;
@@ -39,10 +46,11 @@ enum class WidgetType : uint8_t {
   Gauge = 4,  // Rundinstrument
   Indicator = 5,  // Kontrollleuchte
   Rect = 6,  // Fläche / Linie
+  Image = 7,  // Bild
 };
 
 constexpr bool isKnownWidgetType(uint8_t c) {
-  return c == 1 || c == 2 || c == 3 || c == 4 || c == 5 || c == 6;
+  return c == 1 || c == 2 || c == 3 || c == 4 || c == 5 || c == 6 || c == 7;
 }
 
 enum class Source : uint8_t {
@@ -143,6 +151,7 @@ enum class Prop : uint8_t {
   Format = 26,  // Format (str)
   BorderColor = 27,  // Rahmenfarbe (color)
   BorderWidth = 28,  // Rahmenbreite (px) (u8)
+  Image = 29,  // Bild (u8)
 };
 
 enum class CfgType : uint8_t { Int, Float, Bool, Str, Enum };
@@ -157,6 +166,7 @@ enum class CfgKey : uint16_t {
   FahrzeugTankreichweiteKm,
   AnzeigeLayoutDatei,
   AnzeigeStartseite,
+  AnzeigeStartbildDauerS,
   AnzeigeStartbildText,
   AnzeigeHelligkeitTag,
   AnzeigeHelligkeitNacht,
@@ -227,6 +237,7 @@ struct CfgDef {
   std::string format; \
   Color borderColor; \
   uint8_t borderWidth; \
+  uint8_t image; \
   uint32_t propsSet[2];
 
 constexpr CfgDef kConfigDefs[] = {
@@ -239,6 +250,7 @@ constexpr CfgDef kConfigDefs[] = {
   {"fahrzeug", "tankreichweite_km", CfgType::Int, "150", 0.0f, 1000.0f, ""},
   {"anzeige", "layout_datei", CfgType::Str, "design.s51", 0.0f, 0.0f, ""},
   {"anzeige", "startseite", CfgType::Int, "0", 0.0f, 15.0f, ""},
+  {"anzeige", "startbild_dauer_s", CfgType::Int, "2", 0.0f, 10.0f, ""},
   {"anzeige", "startbild_text", CfgType::Str, "S51", 0.0f, 0.0f, ""},
   {"anzeige", "helligkeit_tag", CfgType::Int, "100", 5.0f, 100.0f, ""},
   {"anzeige", "helligkeit_nacht", CfgType::Int, "30", 5.0f, 100.0f, ""},

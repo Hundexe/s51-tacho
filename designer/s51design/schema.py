@@ -19,23 +19,33 @@ from dataclasses import dataclass, field
 
 MAGIC = b"S51L"
 VERSION_MAJOR = 1
-VERSION_MINOR = 0
+VERSION_MINOR = 1
 HEADER_SIZE = 16
 DISPLAY_WIDTH = 480
 DISPLAY_HEIGHT = 320
 
-MAX_FILE_SIZE = 65536
+MAX_FILE_SIZE = 1048576       # 1 MiB, Bilder brauchen Platz
 MAX_SCREENS = 16
 MAX_WIDGETS_PER_SCREEN = 96
 MAX_STRING_BYTES = 255
+MAX_IMAGES = 32
+MAX_IMAGE_SIDE = 480
 
 CHUNK_META = b"META"
 CHUNK_SCREEN = b"SCRN"
+CHUNK_IMAGE = b"IMAG"
 
 # Rollen einer Seite
 ROLE_PAGE = 0
 ROLE_NIGHT = 1
+ROLE_STARTUP = 2      # wird beim Einschalten kurz gezeigt
 NO_PAGE = 0xFF
+NO_IMAGE = 0xFF
+
+# Bilder
+IMAGE_FORMAT_RAW = 1    # Pixel unkomprimiert
+IMAGE_FORMAT_RLE = 2    # Pixel lauflängenkodiert
+IMAGE_FLAG_ALPHA = 0x01 # jedes Pixel hat ein Alpha-Byte
 
 # Bits im Flag-Byte eines Elements
 WFLAG_HIDDEN = 0x01   # wird nicht angezeigt
@@ -156,6 +166,7 @@ PROPS = [
     Prop(26, "format", "Format", "str", "HH:MM"),
     Prop(27, "border_color", "Rahmenfarbe", "color", "#000000"),
     Prop(28, "border_width", "Rahmenbreite (px)", "u8", 0),
+    Prop(29, "image", "Bild", "u8", 0xFF),
 ]
 
 
@@ -192,6 +203,9 @@ WIDGET_TYPES = [
     WidgetType(6, "rect", "Fläche / Linie",
                ("color", "radius", "border_color", "border_width"),
                (100, 2), {"color": "#2C2C2A"}),
+    WidgetType(7, "image", "Bild",
+               ("image",),
+               (64, 64), {}),
 ]
 
 # Nachschlagetabellen
@@ -266,8 +280,10 @@ CONFIG = [
     CfgKey("anzeige", "layout_datei", "str", "design.s51",
            "Name der Layout-Datei im Ordner s51 auf der SD-Karte."),
     CfgKey("anzeige", "startseite", "int", 0, "Nummer der Seite, die nach dem Start gezeigt wird.", 0, 15),
+    CfgKey("anzeige", "startbild_dauer_s", "int", 2,
+           "Wie lange die Startbild-Seite des Layouts beim Einschalten gezeigt wird, in Sekunden. 0 = aus.", 0, 10),
     CfgKey("anzeige", "startbild_text", "str", "S51",
-           "Text, der beim Einschalten kurz angezeigt wird. Leer = kein Startbild."),
+           "Text beim Einschalten, falls das Layout keine Startbild-Seite hat. Leer = nichts anzeigen."),
     CfgKey("anzeige", "helligkeit_tag", "int", 100, "Helligkeit am Tag in Prozent.", 5, 100),
     CfgKey("anzeige", "helligkeit_nacht", "int", 30, "Helligkeit nachts in Prozent.", 5, 100),
     CfgKey("anzeige", "helligkeit_auto", "bool", True, "Helligkeit über den Lichtsensor regeln."),

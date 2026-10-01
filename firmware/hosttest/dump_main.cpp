@@ -64,6 +64,7 @@ static void dumpWidget(const WidgetData& w) {
   std::printf(" format=%s\n", w.format.c_str());
   std::printf(" border_color=%s\n", hex(w.borderColor).c_str());
   std::printf(" border_width=%s\n", u(w.borderWidth).c_str());
+  std::printf(" image=%s\n", u(w.image).c_str());
 }
 
 int main(int argc, char** argv) {
@@ -79,8 +80,23 @@ int main(int argc, char** argv) {
   } else {
     std::printf("LAYOUT %s|%s|%s|%u|%u|%u|%zu\n", L.name.c_str(), L.author.c_str(), L.tool.c_str(),
                 L.created, L.width, L.height, L.screens.size());
+    for (const auto& img : L.images) {
+      size_t n = static_cast<size_t>(img.width) * img.height;
+      std::vector<uint16_t> rgb(n);
+      std::vector<uint8_t> alpha(n);
+      bool ok = img.decodePixels(rgb.data(), alpha.data());
+      std::vector<uint8_t> flat;
+      flat.reserve(n * 3);
+      for (size_t k = 0; k < n; ++k) {
+        flat.push_back(static_cast<uint8_t>(rgb[k] & 0xFF));
+        flat.push_back(static_cast<uint8_t>(rgb[k] >> 8));
+        flat.push_back(alpha[k]);
+      }
+      std::printf("IMAGE %u|%s|%u|%u|%d|%08x|%d\n", img.id, img.name.c_str(), img.width, img.height,
+                  img.hasAlpha ? 1 : 0, crc32(flat.data(), flat.size()), ok ? 1 : 0);
+    }
     for (const auto& s : L.screens) {
-      std::printf("SCREEN %u|%d|%u|%s|%s|%zu\n", s.id, s.night ? 1 : 0, s.nightOf, hex(s.bg).c_str(),
+      std::printf("SCREEN %u|%u|%u|%s|%s|%zu\n", s.id, s.role, s.nightOf, hex(s.bg).c_str(),
                   s.name.c_str(), s.widgets.size());
       for (const auto& w : s.widgets) dumpWidget(w);
     }

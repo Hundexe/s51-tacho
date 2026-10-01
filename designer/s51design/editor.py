@@ -80,9 +80,59 @@ class Editor:
             self.screen_index = j
 
     def set_screen(self, **changes):
+        if changes.get("role") == "startup" and any(
+                s.role == "startup" for s in self.layout.screens if s is not self.screen):
+            raise ValueError("Es gibt schon eine Startbild-Seite. Ein Layout kann nur eine haben.")
         self.checkpoint()
         for k, v in changes.items():
             setattr(self.screen, k, v)
+
+    # -- Bilder -------------------------------------------------------------
+
+    def image_by_id(self, img_id):
+        return next((i for i in self.layout.images if i.id == img_id), None)
+
+    def free_image_id(self):
+        used = {i.id for i in self.layout.images}
+        for i in range(S.MAX_IMAGES):
+            if i not in used:
+                return i
+        raise ValueError(f"Höchstens {S.MAX_IMAGES} Bilder pro Layout")
+
+    def add_image(self, img, place=True):
+        """Fügt ein Bild hinzu. Mit place wird es dem gewählten Bild-Element zugewiesen
+        oder als neues Bild-Element in die Mitte gesetzt."""
+        if len(self.layout.images) >= S.MAX_IMAGES:
+            raise ValueError(f"Höchstens {S.MAX_IMAGES} Bilder pro Layout")
+        self.checkpoint()
+        self.layout.images.append(img)
+        if not place:
+            return None
+        w = self.widget
+        if w is None or w.type != "image":
+            if len(self.screen.widgets) >= S.MAX_WIDGETS_PER_SCREEN:
+                raise ValueError(f"Höchstens {S.MAX_WIDGETS_PER_SCREEN} Elemente pro Seite")
+            w = Widget.new("image")
+            w.x = (self.layout.width - img.width) // 2
+            w.y = (self.layout.height - img.height) // 2
+            self.screen.widgets.append(w)
+            self.selected = len(self.screen.widgets) - 1
+        w.props["image"] = img.id
+        w.w, w.h = img.width, img.height
+        return w
+
+    def remove_image(self, img_id):
+        """Löscht ein Bild. Elemente, die es benutzen, zeigen danach kein Bild."""
+        self.checkpoint()
+        self.layout.images = [i for i in self.layout.images if i.id != img_id]
+        for scr in self.layout.screens:
+            for w in scr.widgets:
+                if w.type == "image" and w.get("image") == img_id:
+                    w.props["image"] = S.NO_IMAGE
+
+    def image_usage(self, img_id):
+        return sum(1 for scr in self.layout.screens for w in scr.widgets
+                   if w.type == "image" and w.get("image") == img_id)
 
     def day_pages(self):
         return [s for s in self.layout.screens if s.role == "page"]

@@ -3,6 +3,7 @@ eingebautes Standard-Layout der Firmware."""
 
 import math
 
+from . import images as I
 from .layout_format import Layout, Screen, Widget
 
 TEXT = "#F1EFE8"
@@ -20,6 +21,21 @@ def _w(type_key, x, y, w, h, **props):
     wd.w, wd.h = w, h
     wd.props.update(props)
     return wd
+
+
+def _logo(img_id=0, size=128, ring=(29, 158, 117)):
+    w, h, rgba = I.make_logo(size, ring=ring)
+    return I.from_rgba(img_id, "Logo", w, h, rgba)
+
+
+def _startup(sid, logo, title="S51", subtitle="Digitaltacho", color=TEXT, sub_color=DIM, bg="#000000"):
+    """Startbild-Seite: Logo mittig, darunter zwei Textzeilen."""
+    x = (480 - logo.width) // 2
+    return Screen(sid, "Startbild", role="startup", bg=bg, widgets=[
+        _w("image", x, 40, logo.width, logo.height, image=logo.id),
+        _w("text", 40, 40 + logo.height + 16, 400, 40, text=title, size=34, font="sans_bold", color=color),
+        _w("text", 40, 40 + logo.height + 56, 400, 24, text=subtitle, size=16, color=sub_color),
+    ])
 
 
 def klar():
@@ -78,7 +94,9 @@ def klar():
         _w("value", 340, 280, 120, 30, source="head_temp", size=24, color="#6B2A22", align="right",
            unit=" °C", warn_above=200.0, crit_above=240.0),
     ])
-    return Layout(name="Klar", author="S51-Tacho", screens=[fahrt, statistik, nacht])
+    logo = _logo()
+    return Layout(name="Klar", author="S51-Tacho", images=[logo],
+                  screens=[fahrt, statistik, nacht, _startup(3, logo)])
 
 
 
@@ -359,8 +377,27 @@ def alle_elemente():
            size=16, color="#8A2E24"),
         _w("value", 140, 190, 200, 80, source="speed", font="segment", size=72, color="#B03A2E"),
     ])
-    return Layout(name="Alle Elemente", author="S51-Tacho",
-                  screens=[texte, balken, rund, leuchten, flaechen, nacht])
+    gross, klein, amber = _logo(0, 128), _logo(1, 64), _logo(2, 64, ring=(239, 159, 39))
+    bilder = Screen(6, "Bilder", widgets=[
+        _label(12, 8, 456, "Bilder", 20, TEXT, h=28),
+        _w("image", 24, 56, 128, 128, image=0),
+        _w("image", 184, 88, 64, 64, image=1),
+        _w("image", 272, 88, 64, 64, image=2),
+        _label(24, 190, 128, "128 × 128", 11, DIM, "center"),
+        _label(184, 190, 64, "64 × 64", 11, DIM, "center"),
+        _label(272, 190, 64, "andere Farbe", 11, DIM, "center"),
+        _w("rect", 352, 56, 112, 128, color="#1D9E75", radius=10),
+        _w("image", 376, 88, 64, 64, image=1),
+        _label(352, 190, 112, "mit Transparenz", 11, DIM, "center"),
+        _w("text", 12, 222, 456, 90,
+           text="Bilder werden als PNG, JPG oder BMP geladen und beim Laden auf die Größe des Rahmens "
+                "gebracht. Durchsichtige Stellen bleiben durchsichtig. Ein Bild kann auf vielen Seiten "
+                "benutzt werden und steht nur einmal in der Datei.",
+           size=13, color=DIM, align="left"),
+    ])
+    return Layout(name="Alle Elemente", author="S51-Tacho", images=[gross, klein, amber],
+                  screens=[texte, balken, rund, leuchten, flaechen, nacht, bilder,
+                           _startup(7, gross, "Alle Elemente", "Startbild-Seite mit Logo und Text")])
 
 
 PRESETS = {

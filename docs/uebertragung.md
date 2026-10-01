@@ -84,7 +84,7 @@ Mit Code. Liefert die aktuelle `tacho.cfg` als Text.
 | 401 | Code fehlt oder ist falsch | `{"ok": false, "fehler": "Falscher Code"}` |
 | 403 | Übertragungsmodus am Tacho ist aus | `{"ok": false, "fehler": "Übertragungsmodus ist aus"}` |
 | 404 | Pfad unbekannt oder Datei nicht vorhanden | `{"ok": false, "fehler": "…"}` |
-| 413 | Datei größer als 65 536 Bytes | `{"ok": false, "fehler": "…"}` |
+| 413 | Datei größer als 1 MiB | `{"ok": false, "fehler": "…"}` |
 
 ## 4. Testen ohne Tacho
 

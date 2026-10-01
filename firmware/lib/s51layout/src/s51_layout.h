@@ -29,11 +29,25 @@ struct WidgetData {
 
 struct ScreenData {
   uint8_t id = 0;
+  uint8_t role = kRolePage;    // kRolePage, kRoleNight oder kRoleStartup
   bool night = false;          // Nachtversion einer Seite
   uint8_t nightOf = kNoPage;   // bei night: Nummer der Tagseite
   Color bg{0, 0, 0};
   std::string name;
   std::vector<WidgetData> widgets;
+};
+
+struct ImageData {
+  uint8_t id = 0;
+  uint8_t format = 0;          // kImageFormatRaw oder kImageFormatRle
+  bool hasAlpha = false;
+  uint16_t width = 0, height = 0;
+  std::string name;
+  std::vector<uint8_t> data;   // kodierte Pixel, wie in der Datei
+
+  // Entpackt die Pixel. rgb565 braucht width*height Einträge, alpha (optional)
+  // width*height Bytes. Ohne Alpha im Bild wird alpha mit 255 gefüllt.
+  bool decodePixels(uint16_t* rgb565, uint8_t* alpha) const;
 };
 
 struct LayoutData {
@@ -42,6 +56,10 @@ struct LayoutData {
   uint32_t created = 0;
   uint32_t crc = 0;            // Prüfsumme der Datei
   std::vector<ScreenData> screens;
+  std::vector<ImageData> images;
+
+  const ImageData* findImage(uint8_t id) const;
+  const ScreenData* startupScreen() const;
 
   const ScreenData* findScreen(uint8_t id) const;
   // Nachtversion einer Seite oder die Seite selbst, wenn es keine gibt
@@ -61,6 +79,8 @@ enum class DecodeError : uint8_t {
   TooManyWidgets,
   NoScreens,
   BadProperty,
+  BadImage,
+  TooManyImages,
 };
 
 const char* errorText(DecodeError e);

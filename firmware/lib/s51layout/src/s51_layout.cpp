@@ -62,10 +62,73 @@ DecodeError decodeWidget(const uint8_t* d, size_t end, size_t& pos, WidgetData& 
   return DecodeError::None;
 }
 
+// Läuft einmal über die Pixeldaten. Mit Zielpuffern werden sie dabei entpackt,
+// ohne Puffer werden sie nur geprüft.
+bool walkPixels(const ImageData& img, uint16_t* rgb, uint8_t* alpha) {
+  const size_t n = static_cast<size_t>(img.width) * img.height;
+  const size_t step = img.hasAlpha ? 3 : 2;
+  const uint8_t* d = img.data.data();
+  const size_t len = img.data.size();
+  auto put = [&](size_t idx, size_t pos) {
+    if (rgb) rgb[idx] = static_cast<uint16_t>(d[pos] | (d[pos + 1] << 8));
+    if (alpha) alpha[idx] = img.hasAlpha ? d[pos + 2] : 255;
+  };
+  if (img.format == kImageFormatRaw) {
+    if (len != n * step) return false;
+    if (rgb || alpha)
+      for (size_t i = 0; i < n; ++i) put(i, i * step);
+    return true;
+  }
+  if (img.format != kImageFormatRle) return false;
+  size_t pos = 0, idx = 0;
+  while (idx < n) {
+    if (pos >= len) return false;
+    uint8_t b = d[pos++];
+    size_t count = static_cast<size_t>(b & 0x7F) + 1;
+    if (idx + count > n) return false;
+    if (b & 0x80) {
+      if (pos + step > len) return false;
+      for (size_t k = 0; k < count; ++k) put(idx++, pos);
+      pos += step;
+    } else {
+      if (pos + count * step > len) return false;
+      for (size_t k = 0; k < count; ++k) {
+        put(idx++, pos);
+        pos += step;
+      }
+    }
+  }
+  return pos == len;
+}
+
+DecodeError decodeImage(const uint8_t* d, size_t len, ImageData& img) {
+  if (len < 9) return DecodeError::Truncated;
+  img.id = d[0];
+  img.format = d[1];
+  img.hasAlpha = (d[2] & kImageFlagAlpha) != 0;
+  img.width = readU16(d + 4);
+  img.height = readU16(d + 6);
+  uint8_t nlen = d[8];
+  size_t pos = 9;
+  if (pos + nlen + 4 > len) return DecodeError::Truncated;
+  img.name.assign(reinterpret_cast<const char*>(d + pos), nlen);
+  pos += nlen;
+  uint32_t dlen = readU32(d + pos);
+  pos += 4;
+  if (pos + dlen != len) return DecodeError::BadImage;
+  if (img.id == kNoImage || img.width < 1 || img.width > kMaxImageSide || img.height < 1 ||
+      img.height > kMaxImageSide)
+    return DecodeError::BadImage;
+  img.data.assign(d + pos, d + pos + dlen);
+  if (!walkPixels(img, nullptr, nullptr)) return DecodeError::BadImage;
+  return DecodeError::None;
+}
+
 DecodeError decodeScreen(const uint8_t* d, size_t len, ScreenData& s) {
   if (len < 10) return DecodeError::Truncated;
   s.id = d[0];
-  s.night = d[1] == kRoleNight;
+  s.role = (d[1] == kRoleNight || d[1] == kRoleStartup) ? d[1] : kRolePage;
+  s.night = s.role == kRoleNight;
   s.nightOf = s.night ? d[2] : kNoPage;
   s.bg = Color{d[4], d[5], d[6]};
   uint8_t nlen = d[7];
@@ -109,6 +172,8 @@ const char* errorText(DecodeError e) {
     case DecodeError::TooManyWidgets: return "Zu viele Elemente auf einer Seite";
     case DecodeError::NoScreens: return "Keine Seite in der Datei";
     case DecodeError::BadProperty: return "Ungueltige Eigenschaft";
+    case DecodeError::BadImage: return "Bilddaten fehlerhaft";
+    case DecodeError::TooManyImages: return "Zu viele Bilder";
   }
   return "Unbekannter Fehler";
 }
@@ -151,6 +216,11 @@ DecodeError decodeLayout(const uint8_t* d, size_t len, LayoutData& out) {
         else if (code == kMetaCreated && l == 4) L.created = readU32(payload + p);
         p += l;
       }
+    } else if (std::memcmp(fourcc, "IMAG", 4) == 0) {
+      if (L.images.size() >= kMaxImages) return DecodeError::TooManyImages;
+      L.images.emplace_back();
+      DecodeError e = decodeImage(payload, clen, L.images.back());
+      if (e != DecodeError::None) return e;
     } else if (std::memcmp(fourcc, "SCRN", 4) == 0) {
       if (L.screens.size() >= kMaxScreens) return DecodeError::TooManyScreens;
       L.screens.emplace_back();
@@ -167,8 +237,24 @@ DecodeError decodeLayout(const uint8_t* d, size_t len, LayoutData& out) {
 
 const ScreenData* LayoutData::findScreen(uint8_t id) const {
   for (const auto& s : screens)
-    if (!s.night && s.id == id) return &s;
+    if (s.role == kRolePage && s.id == id) return &s;
   return nullptr;
+}
+
+const ScreenData* LayoutData::startupScreen() const {
+  for (const auto& s : screens)
+    if (s.role == kRoleStartup) return &s;
+  return nullptr;
+}
+
+const ImageData* LayoutData::findImage(uint8_t id) const {
+  for (const auto& i : images)
+    if (i.id == id) return &i;
+  return nullptr;
+}
+
+bool ImageData::decodePixels(uint16_t* rgb565, uint8_t* alpha) const {
+  return walkPixels(*this, rgb565, alpha);
 }
 
 const ScreenData* LayoutData::screenFor(uint8_t id, bool nightMode) const {

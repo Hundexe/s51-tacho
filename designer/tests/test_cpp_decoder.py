@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
@@ -47,9 +48,16 @@ def py_dump(data, cfg_text=None):
     try:
         L = layout_format.decode(data)
         out.append(f"LAYOUT {L.name}|{L.author}|{L.tool}|{L.created}|{L.width}|{L.height}|{len(L.screens)}")
+        for img in L.images:
+            flat = bytearray()
+            for k, v in enumerate(img.pixels):
+                flat += bytes((v & 0xFF, v >> 8, img.alpha[k] if img.alpha is not None else 255))
+            crc = zlib.crc32(bytes(flat)) & 0xFFFFFFFF
+            out.append(f"IMAGE {img.id}|{img.name}|{img.width}|{img.height}|{1 if img.has_alpha else 0}|{crc:08x}|1")
+        roles = {"page": S.ROLE_PAGE, "night": S.ROLE_NIGHT, "startup": S.ROLE_STARTUP}
         for s in L.screens:
-            night = 1 if s.role == "night" else 0
-            out.append(f"SCREEN {s.id}|{night}|{s.night_of if night else S.NO_PAGE}|{s.bg}|{s.name}|{len(s.widgets)}")
+            night = s.role == "night"
+            out.append(f"SCREEN {s.id}|{roles[s.role]}|{s.night_of if night else S.NO_PAGE}|{s.bg}|{s.name}|{len(s.widgets)}")
             for w in s.widgets:
                 code = int(w.type[1:]) if w.type.startswith("#") else S.WTYPE_BY_KEY[w.type].code
                 out.append(f"WIDGET {code}|{1 if w.hidden else 0}|{w.x}|{w.y}|{w.w}|{w.h}")
@@ -119,6 +127,26 @@ class CppDecoderMatchesPython(unittest.TestCase):
         layout = Layout(name="Test", author="A", created=123, screens=[scr, night],
                         unknown_chunks=[(b"ZZZZ", b"abc")])
         self.compare(layout_format.encode(layout, tool="t"))
+
+    def test_images_and_startup(self):
+        import random
+        from s51design import images as I
+        rnd = random.Random(5)
+        w, h, rgba = I.make_logo(64)
+        logo = I.from_rgba(0, "Logo", w, h, rgba)                     # mit Alpha, wird lauflängenkodiert
+        noise = I.from_rgba(7, "Rauschen", 9, 5, bytes(rnd.randrange(256) if k % 4 != 3 else 255
+                                                       for k in range(9 * 5 * 4)))   # ohne Alpha, roh
+        start = Screen(5, "Start", role="startup",
+                       widgets=[Widget("image", 10, 10, 64, 64, props={"image": 0})])
+        layout = Layout(name="Bilder", created=1, images=[logo, noise], screens=[Screen(0, "Fahrt"), start])
+        data = layout_format.encode(layout)
+        self.compare(data)
+        # Bilddaten beschädigen (Prüfsumme danach korrigieren): beide Decoder müssen ablehnen
+        broken = bytearray(data)
+        idx = broken.index(b"IMAG") + 8 + 9 + len("Logo") + 4 + 3
+        broken[idx] ^= 0xFF
+        broken[-4:] = (zlib.crc32(bytes(broken[:-4])) & 0xFFFFFFFF).to_bytes(4, "little")
+        self.compare(bytes(broken))
 
     def test_corrupt_files(self):
         data = layout_format.encode(presets.klar())

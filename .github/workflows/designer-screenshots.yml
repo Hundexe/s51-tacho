@@ -1,0 +1,44 @@
+name: Designer-Bildschirmfotos
+
+# Startet den Designer auf einem Linux-Rechner ohne Bildschirm (Xvfb) und
+# macht Bildschirmfotos für die Doku (designer/tools/screenshots.py).
+# Von Hand starten: Actions → „Designer-Bildschirmfotos“ → Run workflow.
+# Die Bilder liegen danach als Download „designer-screenshots“ am Lauf.
+# Auf Zweigen, die mit „ui-“ beginnen, werden sie zusätzlich nach
+# docs/bilder/designer/ in den Zweig geschrieben.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: ["ui-*"]
+    paths:
+      - "designer/**"
+      - ".github/workflows/designer-screenshots.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pakete installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk python3-pil xvfb imagemagick fonts-dejavu
+      - name: Bildschirmfotos
+        working-directory: designer
+        run: xvfb-run -s "-screen 0 1440x880x24" python3 tools/screenshots.py ../docs/bilder/designer
+      - uses: actions/upload-artifact@v4
+        with:
+          name: designer-screenshots
+          path: docs/bilder/designer/*.png
+      - name: In den Zweig schreiben
+        if: startsWith(github.ref_name, 'ui-')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/bilder/designer/*.png
+          git commit -m "Bildschirmfotos des Designers [skip ci]" || exit 0
+          git push

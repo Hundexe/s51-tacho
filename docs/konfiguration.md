@@ -66,7 +66,8 @@ Fehlertoleranz: Ein unbekannter Schlüssel, ein unbekannter Abschnitt oder ein u
 |---|---|---|---|---|
 | `layout_datei` | Text | design.s51 | | Name der Layout-Datei im Ordner `s51` |
 | `startseite` | Zahl | 0 | 0–15 | Nummer der Seite nach dem Start |
-| `startbild_text` | Text | S51 | | Text beim Einschalten. Leer = kein Startbild |
+| `startbild_dauer_s` | Zahl | 2 | 0–10 | Wie lange die Startbild-Seite des Layouts beim Einschalten zu sehen ist, in Sekunden. 0 = aus |
+| `startbild_text` | Text | S51 | | Text beim Einschalten, falls das Layout keine Startbild-Seite hat. Leer = nichts anzeigen |
 | `helligkeit_tag` | Zahl | 100 | 5–100 | Helligkeit am Tag in % |
 | `helligkeit_nacht` | Zahl | 30 | 5–100 | Helligkeit nachts in % |
 | `helligkeit_auto` | Ja/Nein | ja | | Helligkeit über den Lichtsensor regeln |

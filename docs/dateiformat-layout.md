@@ -2,7 +2,7 @@
 
 Ein Layout beschreibt, was der Tacho anzeigt: welche Seiten es gibt und welche Elemente wo auf jeder Seite liegen. Layouts entstehen im PC-Programm [S51 Designer](../designer/README.md) und kommen über die SD-Karte oder per WLAN auf den Tacho.
 
-**Formatversion:** 1.0
+**Formatversion:** 1.1 (1.1 ergänzt Bilder und die Startbild-Seite)
 
 **Quellen im Code:**
 - Alle Nummern: `designer/s51design/schema.py`. Diese Datei ist die einzige Quelle. Der C++-Header der Firmware wird daraus erzeugt.
@@ -22,6 +22,9 @@ Die Datei ist binär, kompakt und robust gegen beschädigte Karten:
 +----------------------+
 | Abschnitt META       |  Name, Autor, Datum, Programm
 +----------------------+
+| Abschnitt IMAG       |  Bild 1 (optional, beliebig viele bis 32)
+| …                    |
++----------------------+
 | Abschnitt SCRN       |  Seite 1 mit ihren Elementen
 | Abschnitt SCRN       |  Seite 2 …
 | …                    |
@@ -34,7 +37,7 @@ Grundregeln:
 - Alle Zahlen sind **Little-Endian** (niedrigstes Byte zuerst), wie im ESP32 und am PC.
 - Texte sind **UTF-8**, höchstens 255 Bytes, ohne Nullbyte am Ende.
 - Farben sind **3 Bytes R, G, B** (0–255). Die Firmware rechnet sie in das Displayformat RGB565 um.
-- Die ganze Datei darf höchstens **65 536 Bytes** groß sein.
+- Die ganze Datei darf höchstens **1 MiB (1 048 576 Bytes)** groß sein. Bis Version 1.0 waren es 65 536 Bytes.
 
 Typen in den Tabellen: `u8` = 1 Byte ohne Vorzeichen, `u16`/`i16` = 2 Bytes ohne/mit Vorzeichen, `u32` = 4 Bytes ohne Vorzeichen, `f32` = 4 Bytes Gleitkommazahl (IEEE 754).
 
@@ -44,7 +47,7 @@ Typen in den Tabellen: `u8` = 1 Byte ohne Vorzeichen, `u16`/`i16` = 2 Bytes ohne
 |---|---|---|---|
 | 0 | 4 | Zeichen | Kennung `S51L` |
 | 4 | 1 | u8 | Hauptversion, derzeit 1 |
-| 5 | 1 | u8 | Unterversion, derzeit 0 |
+| 5 | 1 | u8 | Unterversion, derzeit 1 |
 | 6 | 2 | u16 | Größe des Kopfs in Bytes, derzeit 16. Abschnitte beginnen an diesem Versatz |
 | 8 | 2 | u16 | Displaybreite in Pixeln (480) |
 | 10 | 2 | u16 | Displayhöhe in Pixeln (320) |
@@ -60,7 +63,7 @@ Nach dem Kopf folgen Abschnitte bis 4 Bytes vor Dateiende. Jeder Abschnitt:
 | 4 | u32 | Länge der Nutzdaten in Bytes |
 | Länge | Bytes | Nutzdaten |
 
-Unbekannte Abschnitte werden übersprungen. So können spätere Versionen neue Abschnitte ergänzen, etwa für Bilder, ohne dass ältere Firmware die Datei ablehnt.
+Unbekannte Abschnitte werden übersprungen. So können spätere Versionen neue Abschnitte ergänzen, ohne dass ältere Firmware die Datei ablehnt. Die Reihenfolge der Abschnitte ist beliebig. Der Designer schreibt META, dann alle IMAG, dann alle SCRN.
 
 ### 3.1 META: Angaben zur Datei
 
@@ -80,7 +83,7 @@ Für jede Seite ein eigener Abschnitt, höchstens 16. Die Reihenfolge in der Dat
 | Größe | Typ | Inhalt |
 |---|---|---|
 | 1 | u8 | Nummer der Seite (0–15, eindeutig in der Datei) |
-| 1 | u8 | Art: 0 = Tagseite, 1 = Nachtversion |
+| 1 | u8 | Art: 0 = Tagseite, 1 = Nachtversion, 2 = Startbild. Unbekannte Werte gelten als Tagseite |
 | 1 | u8 | Bei Nachtversion: Nummer der Tagseite, die sie ersetzt. Sonst 255 |
 | 1 | u8 | reserviert, 0 |
 | 3 | Farbe | Hintergrundfarbe |
@@ -92,6 +95,8 @@ Für jede Seite ein eigener Abschnitt, höchstens 16. Die Reihenfolge in der Dat
 Elemente werden in der Reihenfolge der Datei gezeichnet. Spätere Elemente liegen also über früheren.
 
 **Nachtversionen:** Ist der Nachtmodus an, zeigt der Tacho statt einer Tagseite deren Nachtversion, falls es eine gibt. Beim Blättern zählen nur Tagseiten.
+
+**Startbild:** Höchstens eine Seite darf die Art 2 haben. Der Tacho zeigt sie beim Einschalten so lange, wie in der Konfiguration unter `startbild_dauer_s` steht, danach die Startseite. Typischer Inhalt: ein Logo als Bild-Element und ein Text. Ohne Startbild-Seite zeigt der Tacho `startbild_text` aus der Konfiguration. Startbild-Seiten erscheinen nicht beim Blättern.
 
 ### 3.3 Element
 
@@ -114,6 +119,37 @@ Regeln für Eigenschaften:
 
 Ein Element mit unbekanntem Typ wird nicht gezeichnet, die Datei bleibt aber gültig.
 
+### 3.4 IMAG: ein Bild
+
+Bilder werden einmal in der Datei gespeichert und von Bild-Elementen über ihre Nummer benutzt. Höchstens 32 Bilder, jede Seite höchstens 480 Pixel.
+
+| Größe | Typ | Inhalt |
+|---|---|---|
+| 1 | u8 | Nummer des Bilds (0–254, eindeutig in der Datei) |
+| 1 | u8 | Kodierung: 1 = unkomprimiert, 2 = lauflängenkodiert |
+| 1 | u8 | Schalter: Bit 0 = jedes Pixel hat ein Alpha-Byte. Übrige Bits 0 |
+| 1 | u8 | reserviert, 0 |
+| 2 | u16 | Breite in Pixeln (1–480) |
+| 2 | u16 | Höhe in Pixeln (1–480) |
+| 1 | u8 | Länge des Namens |
+| n | Text | Name des Bilds (für den Designer) |
+| 4 | u32 | Länge der Pixeldaten in Bytes |
+| … | | Pixeldaten, füllen den Abschnitt bis zum Ende |
+
+**Ein Pixel** besteht aus der Farbe im Displayformat **RGB565** als u16 (Little-Endian: erst das niedrige Byte) und, wenn Bit 0 gesetzt ist, einem **Alpha-Byte** (0 = durchsichtig, 255 = deckend). Also 2 oder 3 Bytes je Pixel. Pixel laufen zeilenweise von oben links nach unten rechts.
+
+RGB565 aus 8-Bit-Farben: `((R & 0xF8) << 8) | ((G & 0xFC) << 3) | (B >> 3)`.
+
+**Kodierung 1, unkomprimiert:** alle Pixel hintereinander. Länge = Breite × Höhe × (2 oder 3).
+
+**Kodierung 2, lauflängenkodiert:** Folge von Blöcken, jeder beginnt mit einem Steuerbyte `b`:
+- `b` ≥ 128: **Wiederholung**. Es folgt genau ein Pixel, das (`b` − 127) Mal gesetzt wird, also 2 bis 128 Mal.
+- `b` < 128: **Einzelpixel**. Es folgen (`b` + 1) Pixel, also 1 bis 128.
+
+Die Blöcke ergeben zusammen genau Breite × Höhe Pixel, und die Pixeldaten enden genau mit dem letzten Block. Sonst ist die Datei ungültig. Der Designer nimmt die jeweils kleinere der beiden Kodierungen. Logos mit einfarbigen Flächen werden dadurch meist viel kleiner, Fotos bleiben unkomprimiert.
+
+Platzbedarf: Ein Vollbild 480 × 320 ohne Alpha braucht unkomprimiert 300 KB.
+
 ## 4. Nummern
 
 ### 4.1 Element-Typen
@@ -126,6 +162,7 @@ Ein Element mit unbekanntem Typ wird nicht gezeichnet, die Datei bleibt aber gü
 | 4 | `gauge` | Rundinstrument | `source`, `min`, `max`, `start_angle`, `end_angle`, `thickness`, `color`, `bg_color`, `warn_above`, `warn_color`, `crit_above`, `crit_color` |
 | 5 | `indicator` | Kontrollleuchte | `source`, `icon`, `on_color`, `off_color`, `blink` |
 | 6 | `rect` | Fläche / Linie | `color`, `radius`, `border_color`, `border_width` |
+| 7 | `image` | Bild | `image` |
 
 ### 4.2 Datenquellen (`source`)
 
@@ -197,6 +234,7 @@ Ein Element mit unbekanntem Typ wird nicht gezeichnet, die Datei bleibt aber gü
 | 26 | `format` | Format der Uhrzeit: `HH`, `MM`, `SS` werden ersetzt | Text | HH:MM |
 | 27 | `border_color` | Rahmenfarbe | Farbe | #000000 |
 | 28 | `border_width` | Rahmenbreite in Pixeln, 0 = kein Rahmen | u8 | 0 |
+| 29 | `image` | Nummer des Bilds aus einem IMAG-Abschnitt, 255 = kein Bild | u8 | 255 |
 
 ### 4.4 Abweichende Standardwerte je Typ
 
@@ -210,6 +248,7 @@ Fehlt eine Eigenschaft in der Datei, gelten für diese Typen andere Standardwert
 | `gauge` | 200 × 200 | `source` = speed, `max` = 80, `color` = #1D9E75, `bg_color` = #2C2C2A |
 | `indicator` | 32 × 32 | `source` = neutral, `icon` = neutral |
 | `rect` | 100 × 2 | `color` = #2C2C2A |
+| `image` | 64 × 64 (beim Laden eines Bilds dessen Größe) | – |
 
 ### 4.5 Listen
 
@@ -248,6 +287,8 @@ Diese Regeln gelten für den Tacho und für die Vorschau im Designer (`designer/
 
 **Fläche:** gefülltes Rechteck in `color` mit `radius` abgerundeten Ecken und optionalem Rahmen. Linien sind Flächen mit 1 Pixel Höhe oder Breite.
 
+**Bild:** Das Bild wird in Originalgröße mit seiner linken oberen Ecke an X/Y gezeichnet und am Rahmen des Elements abgeschnitten. Es wird nicht skaliert. Die richtige Größe stellt der Designer beim Laden ein. Alpha wird mit dem gemischt, was darunter liegt. Fehlt das Bild mit der angegebenen Nummer, zeichnet der Tacho nichts.
+
 **Versteckte Elemente** werden auf dem Tacho nicht gezeichnet.
 
 ## 6. Prüfungen beim Lesen
@@ -260,7 +301,8 @@ Der Decoder lehnt eine Datei ab, wenn:
 - mehr als 16 Seiten oder mehr als 96 Elemente auf einer Seite enthalten sind,
 - keine Seite enthalten ist,
 - eine Eigenschaft eine falsche Länge hat,
-- die Datei größer als 65 536 Bytes ist.
+- mehr als 32 Bilder enthalten sind, ein Bild Nummer 255 hat, größer als 480 Pixel ist oder seine Pixeldaten nicht genau zur Größe passen,
+- die Datei größer als 1 MiB ist.
 
 Eine höhere Unterversion (z. B. 1.3) wird gelesen. Was der Decoder nicht kennt, überspringt er.
 
@@ -275,7 +317,7 @@ Ablauf beim Start: Gültige Datei auf der SD-Karte wird benutzt und intern gesic
 
 ## 8. Beispiel
 
-Die kleinstmögliche gültige Datei mit einer leeren schwarzen Seite (Bytes hexadezimal):
+Die kleinstmögliche gültige Datei mit einer leeren schwarzen Seite (Bytes hexadezimal). Sie ist als Version 1.0 geschrieben und wird weiterhin gelesen:
 
 ```
 53 35 31 4C 01 00 10 00 E0 01 40 01 00 00 00 00   Kopf: S51L, 1.0, 16, 480, 320

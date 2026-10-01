@@ -19,6 +19,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 
 from s51design import layout_format, presets, render  # noqa: E402
+from s51design import images as I  # noqa: E402
 from s51design import values as V  # noqa: E402
 
 FONT_FILES = {
@@ -150,11 +151,36 @@ class PilCanvas:
     def tag_raise(self, *a):
         pass
 
+    def create_image(self, x, y, image=None, anchor="nw", **kw):
+        if image is not None:
+            self.img.paste(image, (int(round(x)), int(round(y))), image)
+        return self._next()
+
+
+def pil_images(layout):
+    """Bildnummer, Zoom -> Pillow-Bild (RGBA) für render.draw_screen."""
+    cache = {}
+    by_id = {img.id: img for img in layout.images}
+
+    def image_for(img_id, z):
+        img = by_id.get(img_id)
+        if img is None:
+            return None
+        key = (img_id, z)
+        if key not in cache:
+            im = Image.frombytes("RGBA", (img.width, img.height), I.to_rgba(img))
+            if z != 1:
+                im = im.resize((img.width * z, img.height * z), Image.NEAREST)
+            cache[key] = im
+        return cache[key]
+    return image_for
+
 
 def render_screen(layout, screen, z=2, animate_t=None):
     vals = V.demo_values(t=animate_t, animate=animate_t is not None)
     c = PilCanvas(layout.width * z, layout.height * z)
-    render.draw_screen(c, screen, z, vals, (layout.width, layout.height), show_hidden=False, t=0.1)
+    render.draw_screen(c, screen, z, vals, (layout.width, layout.height), show_hidden=False, t=0.1,
+                       image_for=pil_images(layout))
     return c.img
 
 

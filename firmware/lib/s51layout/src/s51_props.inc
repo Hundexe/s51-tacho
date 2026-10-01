@@ -34,6 +34,7 @@ static void applyDefaults(WidgetData& w) {
   w.format = "HH:MM";
   w.borderColor = Color{0x00, 0x00, 0x00};
   w.borderWidth = 0;
+  w.image = 255;
   switch (w.type) {
     case WidgetType::Text:
       w.text = "Text";
@@ -64,6 +65,8 @@ static void applyDefaults(WidgetData& w) {
       break;
     case WidgetType::Rect:
       w.color = Color{0x2C, 0x2C, 0x2A};
+      break;
+    case WidgetType::Image:
       break;
     default:
       break;
@@ -209,6 +212,11 @@ static bool decodeProp(uint8_t code, const uint8_t* p, uint8_t len, WidgetData& 
       if (len != 1) return false;
       w.borderWidth = p[0];
       w.propsSet[0] |= (1u << 28);
+      return true;
+    case 29:  // image
+      if (len != 1) return false;
+      w.image = p[0];
+      w.propsSet[0] |= (1u << 29);
       return true;
     default:
       return true;

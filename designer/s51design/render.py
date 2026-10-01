@@ -141,7 +141,7 @@ def draw_icon(c, w, z, color):
                       font=("Arial", -int(s * (0.4 if len(label) > 1 else 0.7) * z), "bold"), tags=TAG)
 
 
-def draw_widget(c, w, z, vals, t=None):
+def draw_widget(c, w, z, vals, t=None, image_for=None):
     if w.type == "text":
         draw_text(c, w, z, w.get("text"), w.get("color"), wrap=True)
     elif w.type == "value":
@@ -159,19 +159,28 @@ def draw_widget(c, w, z, vals, t=None):
         bw = w.get("border_width")
         rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, w.get("radius"), z, fill=w.get("color"),
                      outline=w.get("border_color") if bw else "", width=bw * z if bw else 0)
+    elif w.type == "image":
+        img = image_for(w.get("image"), z) if image_for else None
+        if img is not None:
+            c.create_image(w.x * z, w.y * z, image=img, anchor="nw", tags=TAG)
+        else:
+            _r(c, w.x, w.y, w.x + w.w, w.y + w.h, z, outline="#888780", dash=(4, 3))
+            c.create_text((w.x + w.w / 2) * z, (w.y + w.h / 2) * z, text="Kein Bild", fill="#888780",
+                          font=("Arial", -max(8, int(11 * z))), tags=TAG)
     else:
         _r(c, w.x, w.y, w.x + w.w, w.y + w.h, z, outline="#E24B4A", dash=(4, 2))
         c.create_text((w.x + 2) * z, (w.y + 2) * z, text=f"unbekannt {w.type}", anchor="nw",
                       fill="#E24B4A", font=("Arial", -10), tags=TAG)
 
 
-def draw_screen(c, screen, z, vals, size=(480, 320), show_hidden=True, t=None):
+def draw_screen(c, screen, z, vals, size=(480, 320), show_hidden=True, t=None, image_for=None):
+    """image_for(bildnummer, zoom) liefert ein für die Zeichenfläche passendes Bildobjekt oder None."""
     c.delete(TAG)
     bg_item = _r(c, 0, 0, size[0], size[1], z, fill=screen.bg, outline="")
     for w in screen.widgets:
         if w.hidden and not show_hidden:
             continue
-        draw_widget(c, w, z, vals, t)
+        draw_widget(c, w, z, vals, t, image_for)
         if w.hidden:
             _r(c, w.x, w.y, w.x + w.w, w.y + w.h, z, outline="#888780", dash=(2, 3))
     return bg_item

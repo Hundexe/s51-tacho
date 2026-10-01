@@ -247,3 +247,80 @@ class DocumentationMatchesSchema(unittest.TestCase):
             doc = f.read()
         for c in S.CONFIG:
             self.assertIn(f"`{c.key}`", doc, c.key)
+
+
+class ImageTests(unittest.TestCase):
+    def setUp(self):
+        from s51design import images as I
+        self.I = I
+
+    def test_rle_and_raw_roundtrip(self):
+        I = self.I
+        w, h, rgba = I.make_logo(48)
+        logo = I.from_rgba(1, "Logo", w, h, rgba)
+        self.assertTrue(logo.has_alpha)
+        for enc, fmt in ((I.encode_rle, S.IMAGE_FORMAT_RLE), (I.encode_raw, S.IMAGE_FORMAT_RAW)):
+            pixels, alpha = I.decode_pixels(fmt, True, w, h, enc(logo))
+            self.assertEqual(pixels, logo.pixels)
+            self.assertEqual(alpha, logo.alpha)
+        fmt, data = I.encode_pixels(logo)
+        self.assertEqual(fmt, S.IMAGE_FORMAT_RLE)          # Logo hat große einfarbige Flächen
+        self.assertLess(len(data), len(I.encode_raw(logo)))
+
+    def test_opaque_image_has_no_alpha_and_long_runs(self):
+        I = self.I
+        img = I.from_rgba(2, "Rot", 300, 1, bytes((255, 0, 0, 255)) * 300)
+        self.assertFalse(img.has_alpha)
+        data = I.encode_rle(img)
+        self.assertEqual(len(data), 3 * 3)                   # 128 + 128 + 44 Pixel
+        self.assertEqual(I.decode_pixels(S.IMAGE_FORMAT_RLE, False, 300, 1, data)[0], img.pixels)
+
+    def test_broken_pixel_data(self):
+        I = self.I
+        with self.assertRaises(I.ImageError):
+            I.decode_pixels(S.IMAGE_FORMAT_RAW, False, 2, 2, b"\x00" * 7)
+        with self.assertRaises(I.ImageError):
+            I.decode_pixels(S.IMAGE_FORMAT_RLE, False, 2, 2, b"\x83\x00\x00\x00")   # 4 Pixel + Rest
+        with self.assertRaises(I.ImageError):
+            I.decode_pixels(S.IMAGE_FORMAT_RLE, False, 2, 2, b"\x84\x00\x00")       # 5 Pixel bei 4
+        with self.assertRaises(I.ImageError):
+            I.decode_pixels(9, False, 1, 1, b"\x00\x00")
+
+    def test_png_roundtrip_and_resize(self):
+        I = self.I
+        w, h, rgba = I.make_logo(40)
+        back = I.png_decode(I.png_encode(w, h, rgba))
+        self.assertEqual(back, (w, h, rgba))
+        nw, nh = I.fit_size(400, 100, 120, 120)
+        self.assertEqual((nw, nh), (120, 30))
+        small = I.resize_rgba(w, h, rgba, 20, 20)
+        self.assertEqual(len(small), 20 * 20 * 4)
+        self.assertEqual(small[3], 0)                       # Ecke bleibt durchsichtig
+
+    def test_layout_with_images(self):
+        I = self.I
+        w, h, rgba = I.make_logo(32)
+        layout = presets.rennsport()
+        layout.images.append(I.from_rgba(3, "Logo", w, h, rgba))
+        layout.screens.append(Screen(9, "Start", role="startup",
+                                     widgets=[Widget("image", 0, 0, 32, 32, props={"image": 3})]))
+        data = layout_format.encode(layout)
+        back = layout_format.decode(data)
+        self.assertEqual(back.images[0].pixels, layout.images[0].pixels)
+        self.assertEqual(back.screens[-1].role, "startup")
+        self.assertEqual(layout_format.encode(back, tool=back.tool), data)
+        self.assertEqual(layout_format.encode(layout_format.from_dict(layout_format.to_dict(back)), tool=back.tool),
+                         data)
+        layout.screens.append(Screen(10, "Start 2", role="startup"))
+        with self.assertRaises(LayoutError):
+            layout_format.encode(layout)
+
+    def test_full_screen_photo_fits(self):
+        import random
+        I = self.I
+        rnd = random.Random(1)
+        rgba = bytes(rnd.randrange(256) if k % 4 != 3 else 255 for k in range(480 * 320 * 4))
+        layout = Layout(screens=[Screen(0, "Foto", widgets=[Widget("image", 0, 0, 480, 320, props={"image": 0})])],
+                        images=[I.from_rgba(0, "Foto", 480, 320, rgba)])
+        data = layout_format.encode(layout)
+        self.assertLessEqual(len(data), S.MAX_FILE_SIZE)
