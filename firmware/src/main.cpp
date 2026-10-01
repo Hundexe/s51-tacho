@@ -3,6 +3,7 @@
 // Tippen auf das Display zeigt die Touch-Position an.
 #include <Arduino.h>
 #include "lgfx_sc01plus.h"
+#include "version.h"
 
 static LGFX_SC01Plus tft;
 static LGFX_Sprite canvas(&tft);
@@ -145,7 +146,19 @@ void setup() {
   if (!canvas.createSprite(W, H)) {
     Serial.println("Sprite konnte nicht angelegt werden (PSRAM aktiv?)");
   }
-  Serial.println("S51-Tacho Phase 1 gestartet");
+
+  // Kurzer Startbildschirm: zeigt, dass Flashen und Display funktionieren
+  tft.fillScreen(C_BG);
+  tft.setTextDatum(textdatum_t::middle_center);
+  tft.setFont(&fonts::FreeSansBold24pt7b);
+  tft.setTextColor(C_GREEN);
+  tft.drawString("S51", W / 2, H / 2 - 30);
+  tft.setFont(&fonts::FreeSans12pt7b);
+  tft.setTextColor(C_DIM);
+  tft.drawString("Firmware " FW_VERSION " - Display-Test", W / 2, H / 2 + 25);
+  delay(1500);
+
+  Serial.println("S51-Tacho Firmware " FW_VERSION " (Phase 1) gestartet");
 }
 
 void loop() {

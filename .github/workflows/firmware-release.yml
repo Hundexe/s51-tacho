@@ -1,0 +1,70 @@
+name: Firmware bauen und veröffentlichen
+
+# Baut die Firmware mit PlatformIO und fasst Bootloader, Partitionstabelle
+# und Programm zu einer Datei zusammen, die an Adresse 0x0 geflasht wird.
+# Ein Release entsteht, wenn auf main eine neue Version in
+# firmware/include/version.h steht und firmware/release-notes/<Version>.md existiert.
+# Von Hand starten: Actions → „Firmware bauen und veröffentlichen“ → Run workflow.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firmware/**"
+      - ".github/workflows/firmware-release.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: PlatformIO installieren
+        run: python -m pip install platformio==6.1.16
+      - name: Firmware bauen
+        working-directory: firmware
+        run: pio run
+      - name: Eine Datei für Adresse 0x0 erzeugen
+        working-directory: firmware
+        run: |
+          VERSION=$(sed -n 's/#define FW_VERSION "\(.*\)"/\1/p' include/version.h)
+          B=.pio/build/sc01plus
+          BOOT_APP0=$(find ~/.platformio/packages/framework-arduinoespressif32/tools/partitions -name boot_app0.bin | head -1)
+          ESPTOOL=~/.platformio/packages/tool-esptoolpy/esptool.py
+          python -m pip install pyserial==3.5 >/dev/null
+          python "$ESPTOOL" --chip esp32s3 merge_bin -o "s51-tacho-$VERSION-komplett.bin" \
+            --flash_mode keep --flash_freq keep --flash_size 16MB \
+            0x0 $B/bootloader.bin 0x8000 $B/partitions.bin 0xe000 "$BOOT_APP0" 0x10000 $B/firmware.bin
+          cp $B/firmware.bin "s51-tacho-$VERSION-app.bin"
+          ls -l s51-tacho-*.bin
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: firmware/s51-tacho-*.bin
+      - name: Release anlegen, falls die Version neu ist
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="firmware-v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG gibt es schon, nichts zu tun."
+            exit 0
+          fi
+          NOTES="firmware/release-notes/$VERSION.md"
+          if [ ! -f "$NOTES" ]; then
+            echo "Keine Versionshinweise $NOTES, kein Release."
+            exit 0
+          fi
+          gh release create "$TAG" firmware/s51-tacho-$VERSION-*.bin \
+            --target "$GITHUB_SHA" \
+            --title "Firmware $VERSION" \
+            --notes-file "$NOTES" \
+            --prerelease

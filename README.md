@@ -42,7 +42,9 @@ Referenzfahrzeug: Simson S51B mit VAPE-Zündung (12 V) und Batterie.
 
 ### Firmware flashen
 
-Voraussetzung: [VS Code](https://code.visualstudio.com/) mit der Erweiterung **PlatformIO IDE**. Alle Bibliotheken lädt PlatformIO beim ersten Bauen selbst, in den Versionen aus `firmware/platformio.ini`.
+**Ohne Programmierumgebung:** fertige Datei aus den Releases (`firmware-v…`) im Browser flashen, Anleitung in [firmware/README.md](firmware/README.md).
+
+**Selbst bauen:** Voraussetzung [VS Code](https://code.visualstudio.com/) mit der Erweiterung **PlatformIO IDE**. Alle Bibliotheken lädt PlatformIO beim ersten Bauen selbst, in den Versionen aus `firmware/platformio.ini`.
 
 1. Repo herunterladen und den Ordner `firmware/` in VS Code öffnen.
 2. Board per USB-C an den PC anschließen.
