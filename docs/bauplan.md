@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.9, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.10, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -14,6 +14,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.7: Firmware zeigt Layouts aus dem Designer an. Schriften sind DejaVu (frei), in die Firmware eingebaut und kantengeglättet. microSD-Karte wird ab Phase 2 gebraucht.
 - 1.8: Mehrere Designs auf der SD-Karte. Auswahl am Tacho durch langes Drücken, Standard-Design wird im Designer festgelegt.
 - 1.9: Rundinstrumente mit geglätteten Kanten. Balken und Rundinstrumente können ab 0 füllen (Schräglage nach beiden Seiten), Layout-Format 1.2.
+- 1.10: Menü am Tacho (lange drücken) mit Design, Wartung, Alarm, Übertragung, Einstellungen und Sperren. PIN und Sperrbildschirm, Alarm-Protokoll, WLAN-Übertragung in der Firmware.
 
 ---
 
@@ -194,7 +195,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - **Anzeige frei gestaltbar:** Die Fahrseiten entstehen am PC im [S51 Designer](../designer/README.md). Elemente wie Werte, Balken, Rundinstrumente, Kontrollleuchten und Bilder lassen sich frei platzieren. Der Tacho zeichnet die Seiten aus der Layout-Datei ([dateiformat-layout.md](dateiformat-layout.md)). Menüs (Einstellungen, PIN-Eingabe, Alarm, Übertragung) sind fest eingebaut.
 - **Einstellungen** stehen in der Textdatei `tacho.cfg` ([konfiguration.md](konfiguration.md)). PIN und NFC-Tags liegen nur im internen Speicher.
 - **Übertragung:** Layout und Einstellungen per SD-Karte (Ordner `s51`) oder per WLAN vom Designer ([uebertragung.md](uebertragung.md)).
-- **Mehrere Designs:** Auf der SD-Karte können beliebig viele Designs liegen. Das Standard-Design wird im Designer beim Export festgelegt, am Tacho öffnet langes Drücken eine Auswahl mit Vorschau. Die Wahl bleibt gespeichert.
+- **Mehrere Designs:** Auf der SD-Karte können beliebig viele Designs liegen. Das Standard-Design wird im Designer beim Export festgelegt, am Tacho gibt es im Menü eine Auswahl mit Vorschau. Die Wahl bleibt gespeichert.
 - **Startmodus:** Zuerst wird geprüft, warum der Tacho an ist. Zündung → Entsperren oder Fahransicht. Keine Zündung → Alarmprüfung ohne Display.
 - **Tasks:** Sensoren (Interrupts, GPS, I²C mit 20 Hz), Oberfläche (30 fps), Speicher und Fahrtenbuch, Bluetooth.
 - **Speicher:** 16 MB Flash mit zwei App-Bereichen für Updates per WLAN, dazu Dateisystem für Einstellungen.
@@ -202,11 +203,14 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - **Kilometerstand:** im NVS mit Verschleißausgleich, alle 100 m und beim Abschalten.
 - **Seiten aus dem Layout:** Das mitgelieferte Layout „Klar“ hat die Seiten Fahrt, Statistik, eine Nachtversion der Fahrseite und ein Startbild mit Logo. Beliebige weitere Seiten lassen sich im Designer anlegen.
 - **Startbild:** Hat das Layout eine Startbild-Seite, zeigt der Tacho sie beim Einschalten für `anzeige.startbild_dauer_s` Sekunden. Sonst erscheint `anzeige.startbild_text`.
-- **Fest eingebaute Menüs:**
-  - Wartung: Erinnerungen bestätigen
-  - Alarm: scharf/aus, PIN ändern, NFC-Tag anlernen, Protokoll
-  - Einstellungen: Gänge anlernen, Hinweise zur tacho.cfg anzeigen
-  - Übertragung: WLAN für Designer und Firmware-Updates einschalten, Code anzeigen
+- **Fest eingebaute Menüs** (lange auf das Display drücken, Bedienung in [firmware/README.md](../firmware/README.md)):
+  - Design: Auswahl mit Vorschau
+  - Wartung: Kilometerstand, Erinnerungen bestätigen
+  - Alarm: scharf/aus, Sicherheitsstufe, PIN festlegen, ändern oder entfernen, NFC-Tag anlernen, Protokoll
+  - Übertragung: WLAN für den Designer einschalten, Code anzeigen (Firmware-Updates per WLAN folgen in Phase 8)
+  - Einstellungen: Gänge anlernen, Hinweise zur tacho.cfg, Angaben zu Firmware und Speicher
+  - Sperren: Sperrbildschirm von Hand zeigen
+- **PIN:** 4–6 Ziffern, nur als SHA-256-Prüfwert mit Zufallssalz im internen Speicher. Vergessen: internen Speicher löschen und neu flashen (firmware/README.md).
 - **Warnfarben:** Schwellen je Element im Layout, Grenzwerte für Warnungen in der tacho.cfg.
 - **WLAN:** nur im Stand und nur, solange das Menü Übertragung offen ist.
 
@@ -221,7 +225,7 @@ Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste
 ## 8. Phasen
 
 1. **Display am Schreibtisch:** Demo-Fahransicht, Touch-Test (Code liegt in `firmware/`).
-2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Seitenwechsel, Nachtmodus (fertig ab Firmware 0.2.0), Design-Auswahl am Tacho (ab 0.3.0). Werte noch Demo-Werte. Danach: Menüs, Sperrbildschirm mit PIN.
+2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Seitenwechsel, Nachtmodus (fertig ab Firmware 0.2.0), Design-Auswahl am Tacho (ab 0.3.0), Menüs, Sperrbildschirm mit PIN, Alarm-Protokoll und WLAN-Übertragung (ab 0.5.0). Werte noch Demo-Werte.
 3. **I²C-Module am Tisch:** Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
 4. **GPS und Drehzahl:** Drehzahl-Impulse simuliert mit einem zweiten Mikrocontroller.
 5. **Stromversorgung und Alarm:** Schutz-, Selbsthaltungs- und Wächterschaltung, Ruhestrom messen, Alarmton.
@@ -236,6 +240,7 @@ Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste
 - [ ] Fotos und Maße von Lampe und Gabelhalterung, Kabelverbindungen in der Lampe?
 - [ ] Sicherheitsstufe 1 oder 2 als Standard?
 - [ ] Hall gleich mit einbauen oder erst nur GPS?
+- [ ] PIN per Lenkertaster (Phase 3): dieselbe PIN, dann nur aus den Ziffern 1–3, oder eine eigene Tastenfolge?
 
 ## Herkunft einzelner Entscheidungen
 - I²C-Erweiterung bei Pin-Mangel → umgesetzt (MCP23017 + ADS1115)

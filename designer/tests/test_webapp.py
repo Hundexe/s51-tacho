@@ -120,6 +120,7 @@ class WebappTests(unittest.TestCase):
                 d = self.req("/api/preset?name=Minimal")
                 r = self.req("/api/wireless", json_body={"action": "send_layout", "host": host, "code": "123456", "layout": d})
                 self.assertGreater(r["size"], 0)
+                self.assertEqual(r["datei"], "minimal.s51")
                 back = self.req("/api/wireless", json_body={"action": "fetch_layout", "host": host, "code": "123456"})
                 self.assertEqual(back["name"], "Minimal")
                 cfg = webapp.cfg_to_json(config_format.defaults())

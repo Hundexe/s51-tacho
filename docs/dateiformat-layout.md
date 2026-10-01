@@ -317,13 +317,13 @@ Eine höhere Unterversion (z. B. 1.3) wird gelesen. Was der Decoder nicht kennt,
 | Im Tacho | Kopie des zuletzt benutzten Designs im internen Flash, dazu im NVS die Auswahl am Tacho |
 
 **Welches Design der Tacho zeigt**, in dieser Reihenfolge:
-1. Das am Tacho gewählte Design (lange auf das Display drücken öffnet die Auswahl). Die Wahl gilt, solange in der Konfiguration noch dasselbe Standard-Design steht wie beim Auswählen. Wird im Designer ein neues Standard-Design festgelegt, gilt dieses beim nächsten Start und die Auswahl am Tacho wird zurückgesetzt.
+1. Das am Tacho gewählte Design (lange auf das Display drücken, im Menü „Design“) oder das zuletzt per WLAN empfangene. Die Wahl gilt, solange in der Konfiguration noch dasselbe Standard-Design steht wie beim Auswählen. Wird im Designer ein neues Standard-Design festgelegt, gilt dieses beim nächsten Start und die Auswahl am Tacho wird zurückgesetzt.
 2. Das Standard-Design aus der Konfiguration (`layout_datei`).
 3. Die erste `.s51`-Datei im Ordner `s51` (alphabetisch).
 4. Die interne Kopie.
 5. Das eingebaute Layout „Klar“.
 
-Beschädigte Dateien werden übersprungen. Jedes von der SD-Karte gelesene Design wird intern gesichert.
+Beschädigte Dateien werden übersprungen. Jedes von der SD-Karte gelesene Design wird intern gesichert. Per WLAN empfangene Designs landen unter demselben Dateinamen im Ordner `s51` wie beim Export im Designer ([uebertragung.md](uebertragung.md)).
 
 **Design-Auswahl am Tacho:** zeigt alle `.s51`-Dateien im Ordner `s51` mit Name, Dateiname, Anzahl der Seiten und einer Vorschau der ersten Tagseite, dazu das eingebaute Layout „Klar“ (und ohne SD-Karte die interne Kopie). „Übernehmen“ wechselt sofort.
 

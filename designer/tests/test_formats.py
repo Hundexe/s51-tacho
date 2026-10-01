@@ -187,6 +187,8 @@ class TransferTests(unittest.TestCase):
         data = layout_format.encode(presets.klar())
         r = transfer.send_layout(self.host, "424242", data)
         self.assertTrue(r["ok"])
+        self.assertEqual(r["datei"], "klar.s51")
+        self.assertTrue(os.path.exists(os.path.join(self.tmp.name, "klar.s51")))
         self.assertEqual(transfer.fetch_layout(self.host, "424242"), data)
         info = transfer.info(self.host)
         self.assertEqual(info["layout"]["groesse"], len(data))

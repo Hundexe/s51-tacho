@@ -364,7 +364,7 @@ export function wirelessDialog() {
     h("div", { class: "row" }, h("label", {}, "Code vom Display"), code),
     h("div", { style: { display: "flex", gap: "8px", flexWrap: "wrap", margin: "12px 0 6px" } },
       h("button", { class: "btn primary", html: `${icon("upload")}<span>Layout senden</span>`,
-        onclick: () => run("Sende Layout", { action: "send_layout", layout: model.layout }, (r) => `Layout übertragen (${Math.round(r.size / 1024)} KB). Der Tacho zeigt es sofort an.`) }),
+        onclick: () => run("Sende Layout", { action: "send_layout", layout: model.layout }, (r) => `Layout übertragen (${Math.round(r.size / 1024)} KB)${r.datei ? `, gespeichert als ${r.datei}` : ""}. Der Tacho zeigt es sofort an.`) }),
       h("button", { class: "btn", onclick: () => run("Sende Einstellungen", { action: "send_config", values: cfg.values }, () => "Einstellungen übertragen.") }, "Einstellungen senden"),
       h("button", { class: "btn ghost", onclick: () => run("Verbinde", { action: "info" }, (i) => `Verbunden: ${i.geraet}, Firmware ${i.firmware}. ${i.uebertragung_offen ? "Übertragung freigegeben." : "Übertragung am Tacho noch nicht freigegeben."}`) }, "Verbindung prüfen"),
       h("button", { class: "btn ghost", onclick: async () => {

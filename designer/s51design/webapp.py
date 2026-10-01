@@ -291,8 +291,8 @@ class Handler(BaseHTTPRequestHandler):
             return transfer.info(host)
         if action == "send_layout":
             data = layout_format.encode(layout_from_json(d["layout"]), tool=f"S51 Designer {__version__}")
-            transfer.send_layout(host, code, data)
-            return {"ok": True, "size": len(data)}
+            r = transfer.send_layout(host, code, data)
+            return {"ok": True, "size": len(data), "datei": (r or {}).get("datei", "")}
         if action == "send_config":
             return transfer.send_config(host, code, config_format.dump(cfg_from_json(d["values"]))) or {"ok": True}
         if action == "fetch_layout":

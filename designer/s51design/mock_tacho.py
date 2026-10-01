@@ -1,7 +1,8 @@
 """Simulierter Tacho für Tests der drahtlosen Übertragung am PC.
 
 Verhält sich wie die Gegenstelle in der Firmware (docs/uebertragung.md),
-prüft empfangene Layouts mit dem Decoder und legt sie in einem Ordner ab.
+prüft empfangene Layouts mit dem Decoder und legt sie in einem Ordner ab,
+unter demselben Dateinamen wie die Firmware (sdcard.file_name_for).
 
 Start:  python -m s51design.mock_tacho --port 8051 --code 123456 --ordner ./sd
 Im Designer dann als Adresse "localhost:8051" und den Code eingeben.
@@ -13,7 +14,7 @@ import os
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from . import config_format, layout_format
+from . import config_format, layout_format, sdcard
 from . import schema as S
 from .transfer import API
 
@@ -58,9 +59,9 @@ def make_handler(state):
 
         def do_GET(self):
             if self.path == API + "/info":
-                lp = self._path("design.s51")
+                lp = self._path(state["layout"]) if state["layout"] else None
                 layout = None
-                if os.path.exists(lp):
+                if lp and os.path.exists(lp):
                     data = _read(lp)
                     layout = {"crc32": f"{zlib.crc32(data) & 0xFFFFFFFF:08x}", "groesse": len(data)}
                 self._send(200, {
@@ -74,9 +75,10 @@ def make_handler(state):
             if self.path in (API + "/layout", API + "/config"):
                 if not self._authorized():
                     return
-                name = "design.s51" if self.path.endswith("layout") else "tacho.cfg"
-                p = self._path(name)
-                if not os.path.exists(p):
+                name = state["layout"] if self.path.endswith("layout") else "tacho.cfg"
+                p = self._path(name) if name else None
+                if not p or not os.path.exists(p):
+                    name = name or "Layout"
                     self._send(404, {"ok": False, "fehler": f"{name} nicht vorhanden"})
                     return
                 ctype = "application/octet-stream" if name.endswith("s51") else "text/plain; charset=utf-8"
@@ -97,13 +99,15 @@ def make_handler(state):
             body = self.rfile.read(length)
             if self.path.endswith("layout"):
                 try:
-                    layout_format.decode(body)
+                    layout = layout_format.decode(body)
                 except layout_format.LayoutError as e:
                     self._send(400, {"ok": False, "fehler": str(e)})
                     return
-                with open(self._path("design.s51"), "wb") as f:
+                name = sdcard.file_name_for(layout.name)
+                with open(self._path(name), "wb") as f:
                     f.write(body)
-                self._send(200, {"ok": True, "crc32": f"{zlib.crc32(body) & 0xFFFFFFFF:08x}"})
+                state["layout"] = name
+                self._send(200, {"ok": True, "crc32": f"{zlib.crc32(body) & 0xFFFFFFFF:08x}", "datei": name})
             else:
                 try:
                     text = body.decode("utf-8")
@@ -120,7 +124,7 @@ def make_handler(state):
 
 def serve(port=8051, code="123456", folder="./sd", open_=True, verbose=True):
     os.makedirs(folder, exist_ok=True)
-    state = {"code": code, "dir": folder, "open": open_, "fails": 0, "verbose": verbose}
+    state = {"code": code, "dir": folder, "open": open_, "fails": 0, "verbose": verbose, "layout": None}
     httpd = ThreadingHTTPServer(("127.0.0.1", port), make_handler(state))
     return httpd, state
 

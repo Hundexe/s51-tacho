@@ -24,7 +24,7 @@ Referenzfahrzeug: Simson S51B mit VAPE-Zündung (12 V) und Batterie.
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 | Display-Test mit Demo-Daten | **Auf echtem WT32-SC01 Plus getestet:** Firmware 0.1.0 läuft, Display und Touch funktionieren. Geflasht mit der Release-Datei über esptool-js im Browser |
-| 2 | Oberfläche | Firmware 0.4.0 zeigt Layouts von der SD-Karte mit Startbild, Seitenwechsel, Design-Auswahl (lange drücken) und geglätteten Rundinstrumenten, **auf dem Display getestet**. Werte noch Demo-Werte, Menüs und PIN offen. Designer 0.6.0 mit neuer Oberfläche im Browserfenster, **unter Windows getestet** |
+| 2 | Oberfläche | Firmware 0.4.0 zeigt Layouts von der SD-Karte mit Startbild, Seitenwechsel, Design-Auswahl und geglätteten Rundinstrumenten, **auf dem Display getestet**. Firmware 0.5.0 bringt Menü (lange drücken), Wartung, PIN und Sperrbildschirm, Alarm-Protokoll und WLAN-Übertragung: Abläufe am PC geprüft, **auf dem Display und mit echtem WLAN noch nicht getestet**. Alarmton folgt in Phase 5. Werte noch Demo-Werte. Designer 0.6.0 mit neuer Oberfläche im Browserfenster, **unter Windows getestet**. Designer 0.6.1 zeigt den Dateinamen nach dem Senden, ungetestet |
 | 3 | I²C-Module | offen |
 | 4 | GPS und Drehzahl | offen |
 | 5 | Stromversorgung und Alarm | offen |

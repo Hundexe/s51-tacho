@@ -1,6 +1,6 @@
 #!/bin/sh
-# Baut die Firmware-Teile zum Zeichnen für den PC: .build/render und .build/ui.
-# Wird von render.sh und ui.sh aufgerufen.
+# Baut die Firmware-Teile zum Zeichnen für den PC: .build/render, .build/ui und .build/menu.
+# Wird von render.sh, ui.sh und menu.sh aufgerufen.
 #
 # Braucht g++ und den Quelltext von LovyanGFX. Liegt er nicht unter
 # $LGFX_SRC, wird LovyanGFX in der Version aus platformio.ini nach
@@ -40,3 +40,4 @@ INC="-I$LGFX_SRC -I$FW/lib/s51layout/src -I$FW/lib/s51render/src -I$FW/lib/s51ui
 LIBS="$FW/lib/s51layout/src/*.cpp $FW/lib/s51render/src/*.cpp $FW/lib/s51ui/src/*.cpp"
 g++ -std=c++17 -O1 -Wall -Wno-unused-function $INC "$HERE/render_main.cpp" "$HERE/lgfx_host_stubs.cpp" $LIBS "$LIB" -o "$BUILD/render"
 g++ -std=c++17 -O1 -Wall -Wno-unused-function $INC "$HERE/ui_main.cpp" "$HERE/lgfx_host_stubs.cpp" $LIBS "$LIB" -o "$BUILD/ui"
+g++ -std=c++17 -O1 -Wall -Wno-unused-function $INC "$HERE/menu_main.cpp" "$HERE/lgfx_host_stubs.cpp" $LIBS "$LIB" -o "$BUILD/menu"

@@ -7,6 +7,8 @@
   den Vorlagen vorkommt.
 - Das eingebaute Layout der Firmware (firmware/data/klar.s51) ist die
   aktuelle Vorlage „Klar“.
+- Per WLAN empfangene Designs bekommen in der Firmware denselben Dateinamen
+  wie beim Export auf die SD-Karte (hosttest/names_main.cpp gegen sdcard.py).
 
 Das Zeichnen selbst prüft firmware/hosttest/compare.py (Bildvergleich, braucht
 den Quelltext von LovyanGFX), siehe firmware/README.md.
@@ -24,7 +26,7 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 
-from s51design import layout_format, presets  # noqa: E402
+from s51design import layout_format, presets, sdcard  # noqa: E402
 from s51design import schema as S  # noqa: E402
 from s51design import values as V  # noqa: E402
 
@@ -130,6 +132,29 @@ class ValuesMatchDesigner(unittest.TestCase):
         layout_format.save(layout, path)
         cpp = subprocess.run([self.exe, path], check=True, capture_output=True).stdout.decode("utf-8")
         self.assertEqual(cpp.splitlines(), py_lines(layout_format.load(path)))
+
+
+@unittest.skipIf(shutil.which("g++") is None, "g++ nicht vorhanden")
+class FileNamesMatchDesigner(unittest.TestCase):
+    NAMES = ["Klar", "  Rennsport Nacht ", "Ärger über Öl & Straße", "ÄÖÜ äöü", "Café Racer – 2026",
+             "x½y²³¹ ¼¾ ªº", "", "---", "Meine S51…Tacho", "Æsir Ølfabrik × ÷ ©", "naïve façade Ñandú ÿ Ý",
+             "Tab\tund Leer\u00a0zeichen", "a´b¨c¯d¸e", "€uro → Pfeil", "S51 Tacho Design mit einem sehr langen Namen der abgeschnitten wird",
+             "Abschnitt-genau-bei-vierzig-Zeichen-xx-y", "1234567890123456789012345678901234567890-abc",
+             "UPPER lower 0123", "ÀÁÂÃÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÙÚÛ", "àáâãåçèéêëìíîïñòóôõùúû", "x\U0001F600y"]
+
+    def test_same_names(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            exe = os.path.join(tmp, "names")
+            subprocess.run(["g++", "-std=c++17", "-Wall", "-Wextra", "-Werror",
+                            "-I", os.path.join(FW, "lib", "s51layout", "src"),
+                            os.path.join(FW, "hosttest", "names_main.cpp"),
+                            os.path.join(FW, "lib", "s51layout", "src", "s51_filename.cpp"), "-o", exe], check=True)
+            text = "\n".join(self.NAMES) + "\n"
+            out = subprocess.run([exe], input=text.encode("utf-8"), check=True, capture_output=True).stdout
+        cpp = out.decode("utf-8").splitlines()
+        for name, got in zip(self.NAMES, cpp, strict=True):
+            with self.subTest(name):
+                self.assertEqual(got, sdcard.file_name_for(name))
 
 
 class FontsAndDefaultLayout(unittest.TestCase):

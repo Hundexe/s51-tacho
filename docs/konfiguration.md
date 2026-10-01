@@ -13,7 +13,7 @@ Bewusst ein anderes Format als das Layout: eine einfache **Textdatei**, die sich
 
 ## 1. Speicherort
 
-`/s51/tacho.cfg` auf der SD-Karte, oder per WLAN übertragen ([uebertragung.md](uebertragung.md)). Der Tacho liest die Datei beim Start und nach jeder Übertragung.
+`/s51/tacho.cfg` auf der SD-Karte, oder per WLAN übertragen ([uebertragung.md](uebertragung.md)). Der Tacho liest die Datei beim Start und nach jeder Übertragung. Er hält eine Kopie im internen Speicher und nutzt sie, wenn keine SD-Karte steckt.
 
 Fehlt die Datei, gelten alle Standardwerte. Eine Vorlage mit allen Einträgen und Erklärungen erzeugt der Designer (Einstellungen → Konfiguration speichern unter) oder die Kommandozeile:
 
@@ -94,14 +94,14 @@ Die Kopftemperatur wird mit dem PT1000 am Zylinderkopf gemessen, nicht direkt un
 | `zuendkerze_km` | Zahl | 0 | 0–100000 | Erinnerung Zündkerze alle x km. 0 = aus |
 | `kette_km` | Zahl | 0 | 0–100000 | Erinnerung Kette schmieren alle x km. 0 = aus |
 
-Abstände aus dem Handbuch des eigenen Fahrzeugs eintragen. Bestätigt wird eine erledigte Wartung am Tacho.
+Abstände aus dem Handbuch des eigenen Fahrzeugs eintragen. Bestätigt wird eine erledigte Wartung am Tacho im Menü Wartung („Erledigt“), danach zählt der Abstand ab dem jetzigen Kilometerstand neu. Die Datenquelle „Kilometer bis Wartung“ zeigt den kleinsten Rest aller eingestellten Abstände.
 
 ### [alarm]
 
 | Schlüssel | Art | Standard | Bereich | Bedeutung |
 |---|---|---|---|---|
-| `aktiv` | Ja/Nein | ja | | Bewegungsalarm einschalten |
-| `stufe` | Zahl | 2 | 1–2 | 1 = Zündschlüssel entschärft. 2 = nach „Zündung an“ PIN oder NFC-Tag nötig |
+| `aktiv` | Ja/Nein | ja | | Bewegungsalarm einschalten. Lässt sich am Tacho im Menü Alarm umschalten. Die Wahl am Tacho gilt, bis hier ein anderer Wert eingetragen wird |
+| `stufe` | Zahl | 2 | 1–2 | 1 = Zündschlüssel entschärft. 2 = nach „Zündung an“ PIN oder NFC-Tag nötig. Der Sperrbildschirm erscheint nur, wenn am Tacho eine PIN festgelegt ist |
 | `empfindlichkeit` | Zahl | 3 | 1–5 | 1 = unempfindlich bis 5 = sehr empfindlich |
 | `dauer_s` | Zahl | 30 | 5–180 | Dauer des Alarmtons in Sekunden |
 | `entsperrzeit_s` | Zahl | 30 | 10–120 | Zeit für PIN oder Tag nach „Zündung an“ (Stufe 2) |
