@@ -129,6 +129,11 @@ class PhotoImage:
         p.factor = self.factor * x
         return p
 
+    def subsample(self, x, y=None):
+        p = PhotoImage(data=self.data)
+        p.factor = self.factor / x
+        return p
+
 
 class Tk(_Widget):
     def __init__(self, *a, **kw):
@@ -153,7 +158,7 @@ def install_fake_tk():
     tk.Button = _Widget
     tk.Label = _Widget
     tk.PhotoImage = PhotoImage
-    tk.StringVar = tk.IntVar = tk.BooleanVar = _Var
+    tk.StringVar = tk.IntVar = tk.DoubleVar = tk.BooleanVar = _Var
     tk.TclError = RuntimeError
     ttk = types.ModuleType("tkinter.ttk")
     for name in ("Frame", "Label", "Button", "Entry", "Combobox", "Checkbutton", "Radiobutton", "Scrollbar",
@@ -222,6 +227,9 @@ class AppSmokeTest(unittest.TestCase):
         self.assertTrue(len(self.app.canvas.created) > 20)
         self.assertEqual(len(self.app.screen_list.items), len(self.app.ed.layout.screens))
         self.assertTrue(any("Startbild" in item for item in self.app.screen_list.items))
+        for z in self.app_mod.ZOOMS:                 # jede Zoomstufe, auch 1,5
+            self.app.zoom.set(z)
+            self.app._zoom_changed()
 
     def test_add_select_drag_edit_undo(self):
         app, z = self.app, self.app.z()
@@ -326,6 +334,13 @@ class AppSmokeTest(unittest.TestCase):
         self.assertGreater(len(app.ed.encoded()), 0)
         app.undo()
         self.assertEqual(len(app.ed.layout.images), 2)
+        # kleines Bild als neues Element: wird nicht vergrößert
+        small = os.path.join(self.tmp.name, "klein.png")
+        with open(small, "wb") as f:
+            f.write(I.png_encode(50, 40, bytes([0, 0, 255, 255]) * (50 * 40)))
+        app.ed.selected = None
+        self.assertTrue(app.import_image(small))
+        self.assertEqual((app.ed.widget.w, app.ed.widget.h), (50, 40))
         # kaputte Datei
         bad = os.path.join(self.tmp.name, "kaputt.png")
         with open(bad, "wb") as f:

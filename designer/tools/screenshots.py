@@ -1,7 +1,7 @@
 """Macht Bildschirmfotos des Designers für die Doku.
 
 Aufruf im Ordner designer/ unter Linux mit X-Server (z. B. Xvfb):
-    xvfb-run -s "-screen 0 1440x880x24" python3 tools/screenshots.py <Zielordner>
+    xvfb-run -s "-screen 0 1440x900x24" python3 tools/screenshots.py <Zielordner>
 
 Braucht ImageMagick (Befehl „import“) für die Aufnahme. Läuft in GitHub
 Actions (.github/workflows/designer-screenshots.yml), kann aber auch lokal

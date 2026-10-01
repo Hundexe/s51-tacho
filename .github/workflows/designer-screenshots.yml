@@ -29,7 +29,7 @@ jobs:
           sudo apt-get install -y python3-tk python3-pil xvfb imagemagick fonts-dejavu
       - name: Bildschirmfotos
         working-directory: designer
-        run: xvfb-run -s "-screen 0 1440x880x24" python3 tools/screenshots.py ../docs/bilder/designer
+        run: xvfb-run -s "-screen 0 1440x900x24" python3 tools/screenshots.py ../docs/bilder/designer
       - uses: actions/upload-artifact@v4
         with:
           name: designer-screenshots

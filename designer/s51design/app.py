@@ -4,6 +4,7 @@ Start:  python -m s51design      (im Ordner designer/)
 """
 
 import base64
+from fractions import Fraction
 import json
 import os
 import queue
@@ -28,7 +29,8 @@ STAGE_MARGIN = 28           # Rand um das Display auf der Zeichenfläche (Bildsc
 BEZEL = 14                  # Breite des Display-Rahmens (Bildschirmpixel)
 SEL_COLOR = C["select"]
 
-ROLE_LABELS = {"page": "Tagseite", "night": "Nachtversion einer Seite", "startup": "Startbild"}
+ROLE_LABELS = {"page": "Tagseite", "night": "Nachtversion", "startup": "Startbild"}
+ZOOMS = (1.0, 1.5, 2.0, 3.0)
 
 # Reihenfolge und Überschriften der Eigenschaften im rechten Bereich.
 # Eigenschaften, die hier fehlen, landen unter „Weitere“.
@@ -119,7 +121,8 @@ class App:
         self.cfg = config_format.defaults()
         self.cfg_loaded = False        # aus Datei geladen oder im Dialog bearbeitet
         self.settings = load_settings()
-        self.zoom = tk.IntVar(value=self.settings.get("zoom", 2))
+        zoom = self.settings.get("zoom", 1.5)
+        self.zoom = tk.DoubleVar(value=zoom if zoom in ZOOMS else 1.5)
         self.show_grid = tk.BooleanVar(value=True)
         self.snap = tk.BooleanVar(value=True)
         self.preview = tk.BooleanVar(value=False)
@@ -265,7 +268,7 @@ class App:
         Tooltip(sd, "Layout und Einstellungen in den Ordner s51 einer SD-Karte schreiben")
 
     def _build_left(self, parent):
-        left = ttk.Frame(parent, padding=(14, 4, 14, 12), width=250)
+        left = ttk.Frame(parent, padding=(14, 4, 14, 12), width=272)
         left.grid(row=0, column=0, sticky="ns")
         left.pack_propagate(False)
 
@@ -319,8 +322,8 @@ class App:
         opts = ttk.Frame(mid, style="Stage.TFrame", padding=(14, 8))
         opts.grid(row=2, column=0, columnspan=2, sticky="ew")
         ttk.Label(opts, text="Zoom", style="Stage.TLabel").pack(side="left", padx=(0, 6))
-        for z in (1, 2, 3):
-            ttk.Radiobutton(opts, text=f"{z}×", value=z, variable=self.zoom, style="Seg.Toolbutton",
+        for z in ZOOMS:
+            ttk.Radiobutton(opts, text=f"{z:g}×".replace(".", ","), value=z, variable=self.zoom, style="Seg.Toolbutton",
                             command=self._zoom_changed, takefocus=False).pack(side="left")
         ttk.Frame(opts, style="Stage.TFrame", width=18).pack(side="left")
         for text, var, cmd, tip in (
@@ -397,7 +400,7 @@ class App:
     def _update_scrollregion(self):
         """Display mittig in der Fläche, mit Rand für den Rahmen. Das Display beginnt immer bei (0, 0)."""
         c, z, L = self.canvas, self.z(), self.ed.layout
-        w, h = L.width * z + 2 * STAGE_MARGIN, L.height * z + 2 * STAGE_MARGIN
+        w, h = int(L.width * z) + 2 * STAGE_MARGIN, int(L.height * z) + 2 * STAGE_MARGIN
         try:
             cw, ch = int(c.winfo_width()), int(c.winfo_height())
         except (tk.TclError, TypeError, ValueError):
@@ -418,8 +421,11 @@ class App:
         if entry is None or entry[0] is not img:
             data = base64.b64encode(I.png_encode(img.width, img.height, I.to_rgba(img))).decode("ascii")
             photo = tk.PhotoImage(data=data)
-            if z > 1:
-                photo = photo.zoom(z, z)
+            f = Fraction(z).limit_denominator(4)        # 1,5 = 3/2: erst verdreifachen, dann halbieren
+            if f.numerator > 1:
+                photo = photo.zoom(f.numerator, f.numerator)
+            if f.denominator > 1:
+                photo = photo.subsample(f.denominator, f.denominator)
             entry = (img, photo)
             self._photos[key] = entry
         return entry[1]
@@ -466,7 +472,7 @@ class App:
             if s.role == "night":
                 day = next((d for d in self.ed.layout.screens if d.id == s.night_of and d.role == "page"), None)
                 suffix = f"  · Nacht von {day.name}" if day else "  · Nacht"
-            elif s.role == "startup":
+            elif s.role == "startup" and "startbild" not in s.name.lower():
                 suffix = "  · Startbild"
             sl.insert("end", f"{s.name}{suffix}")
         sl.selection_clear(0, "end")
@@ -595,7 +601,8 @@ class App:
     def _build_screen_props(self, f):
         s = self.ed.screen
         self.inspector_title.set(s.name)
-        self.inspector_sub.set(f"{ROLE_LABELS.get(s.role, s.role)} · kein Element ausgewählt")
+        self.inspector_sub.set(f"{ROLE_LABELS.get(s.role, s.role)} · Seite {self.ed.screen_index + 1} von "
+                               f"{len(self.ed.layout.screens)}")
         r = 0
         self.heading(f, "Seite", r, pady=(6, 6))
         r += 1
@@ -911,10 +918,11 @@ class App:
         self.settings["last_img_dir"] = os.path.dirname(path)
         save_settings(self.settings)
         target = self.ed.widget
-        if target is not None and target.type == "image":
+        into_frame = target is not None and target.type == "image"
+        if into_frame:                       # in den Rahmen einpassen, auch vergrößern
             box_w, box_h = target.w, target.h
-        else:
-            box_w, box_h = self.ed.layout.width, self.ed.layout.height
+        else:                                # neues Element: nur verkleinern, falls zu groß
+            box_w, box_h = min(width, self.ed.layout.width), min(height, self.ed.layout.height)
         box_w, box_h = max(1, min(box_w, S.MAX_IMAGE_SIDE)), max(1, min(box_h, S.MAX_IMAGE_SIDE))
         nw, nh = I.fit_size(width, height, box_w, box_h)
         if (nw, nh) != (width, height):
@@ -926,8 +934,10 @@ class App:
             messagebox.showwarning(APP_NAME, str(e))
             return False
         self._act(lambda: self.ed.add_image(img))
-        self.status.set(f"Bild „{name}“ geladen, {nw}×{nh} Pixel"
-                        + (f" (verkleinert von {width}×{height})" if (nw, nh) != (width, height) else "") + ".")
+        change = ""
+        if (nw, nh) != (width, height):
+            change = f" ({'verkleinert' if nw < width else 'vergrößert'} von {width}×{height})"
+        self.status.set(f"Bild „{name}“ geladen, {nw}×{nh} Pixel{change}.")
         return True
 
     def image_original_size(self):
