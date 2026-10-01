@@ -101,8 +101,10 @@ class CppDecoderMatchesPython(unittest.TestCase):
     def compare(self, data, cfg_text=None):
         self.assertEqual(self.run_cpp(data, cfg_text), py_dump(data, cfg_text))
 
-    def test_preset(self):
-        self.compare(layout_format.encode(presets.klar()))
+    def test_presets(self):
+        for name, make in presets.PRESETS.items():
+            with self.subTest(name):
+                self.compare(layout_format.encode(make()))
 
     def test_all_types_with_unknown_parts(self):
         scr = Screen(3, "Alle Typen äöü")

@@ -20,13 +20,27 @@ from s51design.layout_format import Layout, LayoutError, Screen, Widget  # noqa:
 
 class LayoutRoundTrip(unittest.TestCase):
     def test_preset_roundtrip(self):
-        layout = presets.klar()
-        data = layout_format.encode(layout)
-        back = layout_format.decode(data)
-        self.assertEqual(layout_format.to_dict(back)["screens"], layout_format.to_dict(layout)["screens"])
-        self.assertEqual(back.name, "Klar")
-        # erneut kodiert muss es bitgleich sein (created bleibt erhalten)
-        self.assertEqual(layout_format.encode(back, tool=back.tool), data)
+        for name, make in presets.PRESETS.items():
+            with self.subTest(name):
+                layout = make()
+                data = layout_format.encode(layout)
+                back = layout_format.decode(data)
+                self.assertEqual(layout_format.to_dict(back)["screens"], layout_format.to_dict(layout)["screens"])
+                self.assertEqual(back.name, name)
+                # erneut kodiert muss es bitgleich sein (created bleibt erhalten)
+                self.assertEqual(layout_format.encode(back, tool=back.tool), data)
+
+    def test_presets_stay_on_screen(self):
+        for name, make in presets.PRESETS.items():
+            for s in make().screens:
+                for w in s.widgets:
+                    with self.subTest(name=name, screen=s.name, widget=w.type):
+                        self.assertGreaterEqual(w.x, 0)
+                        self.assertGreaterEqual(w.y, 0)
+                        self.assertLessEqual(w.x + w.w, S.DISPLAY_WIDTH)
+                        self.assertLessEqual(w.y + w.h, S.DISPLAY_HEIGHT)
+                        for key in w.props:
+                            self.assertIn(key, S.WTYPE_BY_KEY[w.type].props)
 
     def test_all_widget_types_and_props(self):
         scr = Screen(0, "Alle")

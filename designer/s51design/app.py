@@ -11,7 +11,7 @@ import time
 import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
-from . import __version__, config_format, layout_format, render, transfer
+from . import __version__, config_format, layout_format, presets, render, transfer
 from . import schema as S
 from . import values as V
 from .editor import Editor
@@ -110,7 +110,10 @@ class App:
         m = tk.Menu(self.root)
         f = tk.Menu(m, tearoff=False)
         f.add_command(label="Neu (leer)", command=lambda: self.new(None))
-        f.add_command(label="Neu aus Vorlage „Klar“", command=lambda: self.new("Klar"))
+        vorlagen = tk.Menu(f, tearoff=False)
+        for name in presets.PRESETS:
+            vorlagen.add_command(label=name, command=lambda n=name: self.new(n))
+        f.add_cascade(label="Neu aus Vorlage", menu=vorlagen)
         f.add_command(label="Öffnen…", accelerator="Strg+O", command=self.open)
         f.add_command(label="Speichern", accelerator="Strg+S", command=self.save)
         f.add_command(label="Speichern unter…", command=self.save_as)

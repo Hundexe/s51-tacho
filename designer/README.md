@@ -56,6 +56,28 @@ Weitere Hinweise:
 - **Nachtversion:** Seite anlegen, rechts „Art“ auf „Nachtversion einer Seite“ stellen und die Tagseite wählen. Im Nachtmodus zeigt der Tacho dann diese Seite.
 - Die Vorschau zeigt Positionen, Größen, Farben und Werte genau. Die Schriften am PC sehen etwas anders aus als auf dem Tacho.
 
+## Vorlagen
+
+Sechs Layouts sind eingebaut (Datei → Neu aus Vorlage) und liegen auch als Dateien in `beispiele/`. Sie zeigen, was der Designer kann, und sind ein guter Startpunkt für eigene Layouts.
+
+| Vorlage | Inhalt |
+|---|---|
+| **Klar** | Standard-Layout des Tachos: große Geschwindigkeit, Drehzahlbalken, Infozeile, Statistikseite, Nachtversion |
+| **Retro** | Rundinstrument im Stil des alten Simson-Tachos mit Skala, Kilometerzähler und kleinem Drehzahlmesser |
+| **Rennsport** | Riesige Ganganzeige, segmentierter Drehzahlbalken mit rotem Bereich, Schaltblitz, Seite für die Schräglage |
+| **Cockpit** | Viele Werte in Kacheln, Drehzahl als Ring, dazu eine Musikseite mit Songtitel vom iPhone |
+| **Minimal** | Nur Geschwindigkeit, Uhrzeit, Blinker und Warnsymbol, mit gedimmter Nachtversion |
+| **Alle Elemente** | Eine Seite je Element-Typ: Schriften und Ausrichtung, Balkenarten, Rundinstrumente mit verschiedenen Winkeln, alle Symbole, Flächen und Linien, versteckte und gesperrte Elemente, Nachtversion |
+
+![Klar](../docs/bilder/vorlage-klar.png)
+![Retro](../docs/bilder/vorlage-retro.png)
+![Rennsport](../docs/bilder/vorlage-rennsport.png)
+![Cockpit](../docs/bilder/vorlage-cockpit.png)
+![Minimal](../docs/bilder/vorlage-minimal.png)
+![Alle Elemente](../docs/bilder/vorlage-alle-elemente.png)
+
+Die Bilder zeigen die Vorschau mit Demo-Werten. Neu erzeugen mit `python tools/make_examples.py` (braucht Pillow: `pip install pillow`).
+
 ## Auf den Tacho bringen
 
 **SD-Karte:** Datei → Auf SD-Karte exportieren, Laufwerk der Karte wählen. Der Designer legt den Ordner `s51` an und schreibt `design.s51` und `tacho.cfg` hinein. Liegt dort schon eine `tacho.cfg`, fragt er, ob sie überschrieben werden soll.
@@ -70,7 +92,7 @@ Weitere Hinweise:
 |---|---|---|
 | `*.s51` | Layout (binär) | [docs/dateiformat-layout.md](../docs/dateiformat-layout.md) |
 | `tacho.cfg` | Einstellungen (Text) | [docs/konfiguration.md](../docs/konfiguration.md) |
-| `beispiele/klar.s51` | Mitgeliefertes Layout „Klar“ | |
+| `beispiele/*.s51` | Mitgelieferte Layouts, siehe Vorlagen | |
 
 Die `.s51`-Datei ist zugleich die Projektdatei. Es gibt kein separates Projektformat.
 
@@ -102,6 +124,8 @@ python -m s51design.cli config-new tacho.cfg        # Vorlage mit allen Einträg
 | `s51design/app.py` | Oberfläche |
 | `s51design/presets.py` | Mitgelieferte Layouts |
 | `tools/gen_cpp_header.py` | Erzeugt den C++-Teil des Schemas für die Firmware |
+| `tools/preview_png.py` | Vorschaubilder von Layouts als PNG, ohne Fenster (braucht Pillow) |
+| `tools/make_examples.py` | Schreibt alle Vorlagen nach `beispiele/` und ihre Bilder nach `docs/bilder/` |
 
 ## Tests
 

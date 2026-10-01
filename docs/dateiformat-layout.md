@@ -225,7 +225,10 @@ Fehlt eine Eigenschaft in der Datei, gelten für diese Typen andere Standardwert
 
 Diese Regeln gelten für den Tacho und für die Vorschau im Designer (`designer/s51design/values.py`).
 
-**Text und Wert:** Der Text wird im Rahmen des Elements waagerecht nach `align` und senkrecht mittig ausgerichtet. Was nicht in den Rahmen passt, wird abgeschnitten.
+**Text und Wert:** Der Text wird im Rahmen des Elements waagerecht nach `align` und senkrecht mittig ausgerichtet.
+- Elemente vom Typ `text` brechen an Leerzeichen in mehrere Zeilen um, wenn der Text breiter als der Rahmen ist. Ein Zeilenumbruch im Text erzwingt eine neue Zeile. Zeilenabstand 1,2 × `size`, alle Zeilen zusammen senkrecht mittig.
+- Elemente vom Typ `value` brechen nicht um.
+- Was danach nicht in den Rahmen passt, wird abgeschnitten.
 
 **Zahlen:** mit `decimals` Nachkommastellen, Dezimalkomma und Tausenderpunkt, z. B. `12.345` oder `13,8`. Danach folgt `unit`. Fehlt der Wert (z. B. kein GPS-Empfang), steht `–` da.
 

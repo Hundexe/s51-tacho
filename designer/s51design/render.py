@@ -37,12 +37,13 @@ def rounded_rect(c, x0, y0, x1, y1, r, z, **kw):
     return c.create_polygon([p * z for p in pts], smooth=True, tags=TAG, **kw)
 
 
-def draw_text(c, w, z, text, color):
+def draw_text(c, w, z, text, color, wrap=False):
     align = w.get("align")
     anchor = {"left": "w", "center": "center", "right": "e"}[align]
     x = {"left": w.x, "center": w.x + w.w / 2, "right": w.x + w.w}[align]
+    extra = {"width": w.w * z, "justify": align} if wrap else {}
     c.create_text(x * z, (w.y + w.h / 2) * z, text=text, fill=color, font=tk_font(w, z),
-                  anchor=anchor, tags=TAG)
+                  anchor=anchor, tags=TAG, **extra)
 
 
 def draw_bar(c, w, z, value):
@@ -142,7 +143,7 @@ def draw_icon(c, w, z, color):
 
 def draw_widget(c, w, z, vals, t=None):
     if w.type == "text":
-        draw_text(c, w, z, w.get("text"), w.get("color"))
+        draw_text(c, w, z, w.get("text"), w.get("color"), wrap=True)
     elif w.type == "value":
         src = S.SOURCE_BY_KEY.get(w.get("source"))
         raw = vals.get(src.key) if src else None
