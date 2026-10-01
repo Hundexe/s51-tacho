@@ -2,7 +2,7 @@
 
 PlatformIO-Projekt für das WT32-SC01 Plus (ESP32-S3, 16 MB Flash, 2 MB PSRAM). Pins: `include/pins.h`, Display-Treiber: `include/lgfx_sc01plus.h`.
 
-Aktueller Stand: **Phase 1**, Display- und Touch-Test mit Demo-Werten (siehe [docs/bauplan.md](../docs/bauplan.md)).
+Aktueller Stand: **Phase 1**, Display- und Touch-Test mit Demo-Werten (siehe [docs/bauplan.md](../docs/bauplan.md)). Version 0.1.0 ist auf einem echten WT32-SC01 Plus getestet: Display und Touch funktionieren mit den Einstellungen in `include/lgfx_sc01plus.h`.
 
 ## Flashen ohne PlatformIO
 
