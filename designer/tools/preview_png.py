@@ -124,7 +124,10 @@ class PilCanvas:
         if style == "chord":
             self.d.chord([x0, y0, x1, y1], lo, hi, fill=fill or None, outline=outline or None)
         else:
-            self.d.arc([x0, y0, x1, y1], lo, hi, fill=outline, width=max(1, int(round(width))))
+            # Tk zeichnet die Linie mittig auf dem Kreis, Pillow nach innen ab dem Rand
+            wd = max(1, int(round(width)))
+            h = wd / 2
+            self.d.arc([x0 - h, y0 - h, x1 + h, y1 + h], lo, hi, fill=outline, width=wd)
         return self._next()
 
     def create_text(self, x, y, text="", fill="", font=None, anchor="center", width=0, justify="left", **kw):

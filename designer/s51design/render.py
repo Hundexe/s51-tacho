@@ -156,9 +156,15 @@ def draw_widget(c, w, z, vals, t=None, image_for=None):
         on = V.indicator_on(w, vals, t)
         draw_icon(c, w, z, w.get("on_color") if on else w.get("off_color"))
     elif w.type == "rect":
-        bw = w.get("border_width")
-        rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, w.get("radius"), z, fill=w.get("color"),
-                     outline=w.get("border_color") if bw else "", width=bw * z if bw else 0)
+        bw, r = w.get("border_width"), w.get("radius")
+        if bw:
+            # Rahmen liegt innerhalb der Fläche
+            rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, r, z, fill=w.get("border_color"), outline="")
+            if w.w > 2 * bw and w.h > 2 * bw:
+                rounded_rect(c, w.x + bw, w.y + bw, w.x + w.w - bw, w.y + w.h - bw, max(0, r - bw), z,
+                             fill=w.get("color"), outline="")
+        else:
+            rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, r, z, fill=w.get("color"), outline="")
     elif w.type == "image":
         img = image_for(w.get("image"), z) if image_for else None
         if img is not None:

@@ -1,5 +1,6 @@
-"""Schreibt alle mitgelieferten Layouts nach designer/beispiele/ und
-Vorschaubilder nach docs/bilder/.
+"""Schreibt alle mitgelieferten Layouts nach designer/beispiele/,
+Vorschaubilder nach docs/bilder/ und das eingebaute Layout der Firmware
+nach firmware/data/klar.s51.
 
 Aufruf im Ordner designer/:  python tools/make_examples.py
 Die Vorschaubilder brauchen Pillow (pip install pillow). Ohne Pillow
@@ -16,6 +17,7 @@ from s51design import layout_format, presets  # noqa: E402
 
 EXAMPLES = os.path.join(HERE, "..", "beispiele")
 IMAGES = os.path.join(HERE, "..", "..", "docs", "bilder")
+FIRMWARE_DEFAULT = os.path.join(HERE, "..", "..", "firmware", "data", "klar.s51")
 CREATED = 1790812800      # festes Datum, damit die Dateien bei jedem Lauf gleich sind
 
 
@@ -38,6 +40,9 @@ def main():
         path = os.path.join(EXAMPLES, slug(name) + ".s51")
         n = layout_format.save(layout, path, tool="S51 Designer")
         print(f"{os.path.relpath(path)}: {n} Bytes")
+        if name == "Klar":
+            layout_format.save(layout, FIRMWARE_DEFAULT, tool="S51 Designer")
+            print(os.path.relpath(FIRMWARE_DEFAULT))
         if preview_png:
             img = os.path.join(IMAGES, f"vorlage-{slug(name)}.png")
             preview_png.contact_sheet(layout, z=1).save(img, optimize=True)

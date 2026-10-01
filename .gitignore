@@ -9,3 +9,4 @@ designer/dist/
 designer/build/
 *.spec
 sd-simulator/
+firmware/hosttest/.build/

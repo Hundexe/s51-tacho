@@ -62,7 +62,8 @@ def member_type(prop):
 
 
 def gen_header():
-    o = [BANNER, "#pragma once", "#include <cstdint>", "#include <string>", "", "namespace s51 {", ""]
+    o = [BANNER, "#pragma once", "#include <cstddef>",
+        "#include <cstdint>", "#include <string>", "", "namespace s51 {", ""]
     o += ["struct Color {", "  uint8_t r, g, b;",
           "  uint16_t to565() const { return static_cast<uint16_t>(((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3)); }",
           "  bool operator==(const Color& o) const { return r == o.r && g == o.g && b == o.b; }",
@@ -104,6 +105,16 @@ def gen_header():
     o.append("enum class Source : uint8_t {")
     o += [f"  {camel(s.key)} = {s.code},  // {s.label}" for s in S.SOURCES]
     o += ["};", "", "constexpr bool isBoolSource(Source s) { return static_cast<uint8_t>(s) >= 64 && static_cast<uint8_t>(s) < 128; }", ""]
+    o.append("enum class SourceKind : uint8_t { Number, Bool, Text, Time };")
+    o.append("")
+    o.append("// Art jeder Datenquelle und der Bereich der Demo-Werte (wie im Designer)")
+    o.append("struct SourceDef {\n  Source source;\n  SourceKind kind;\n  float demoMin;\n  float demoMax;\n};")
+    o.append("")
+    o.append("constexpr SourceDef kSourceDefs[] = {")
+    for s_ in S.SOURCES:
+        o.append(f"  {{Source::{camel(s_.key)}, SourceKind::{camel(s_.kind)}, "
+                 f"{float(s_.demo_min)!r}f, {float(s_.demo_max)!r}f}},")
+    o += ["};", "", f"constexpr size_t kSourceCount = {len(S.SOURCES)};", ""]
     for name in ("icon", "font", "align", "orientation"):
         o.append(f"enum class {camel(name)} : uint8_t {{")
         o += [f"  {camel(k)} = {c},  // {lbl}" for c, k, lbl in S.ENUMS[name]]

@@ -2,6 +2,7 @@
 // Nicht von Hand ändern.
 
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <string>
 
@@ -88,6 +89,52 @@ enum class Source : uint8_t {
 };
 
 constexpr bool isBoolSource(Source s) { return static_cast<uint8_t>(s) >= 64 && static_cast<uint8_t>(s) < 128; }
+
+enum class SourceKind : uint8_t { Number, Bool, Text, Time };
+
+// Art jeder Datenquelle und der Bereich der Demo-Werte (wie im Designer)
+struct SourceDef {
+  Source source;
+  SourceKind kind;
+  float demoMin;
+  float demoMax;
+};
+
+constexpr SourceDef kSourceDefs[] = {
+  {Source::None, SourceKind::Number, 0.0f, 0.0f},
+  {Source::Speed, SourceKind::Number, 0.0f, 65.0f},
+  {Source::Rpm, SourceKind::Number, 1200.0f, 7500.0f},
+  {Source::Gear, SourceKind::Number, 0.0f, 4.0f},
+  {Source::Odometer, SourceKind::Number, 12345.0f, 12346.0f},
+  {Source::TripA, SourceKind::Number, 0.0f, 150.0f},
+  {Source::TripB, SourceKind::Number, 0.0f, 999.0f},
+  {Source::HeadTemp, SourceKind::Number, 60.0f, 240.0f},
+  {Source::Voltage, SourceKind::Number, 11.5f, 14.4f},
+  {Source::OutsideTemp, SourceKind::Number, 2.0f, 28.0f},
+  {Source::HousingTemp, SourceKind::Number, 15.0f, 55.0f},
+  {Source::Lean, SourceKind::Number, -35.0f, 35.0f},
+  {Source::LeanMax, SourceKind::Number, 38.0f, 38.0f},
+  {Source::Time, SourceKind::Time, 0.0f, 0.0f},
+  {Source::SpeedMax, SourceKind::Number, 62.0f, 62.0f},
+  {Source::SpeedAvg, SourceKind::Number, 34.0f, 34.0f},
+  {Source::RideTime, SourceKind::Number, 0.0f, 90.0f},
+  {Source::TankKm, SourceKind::Number, 0.0f, 180.0f},
+  {Source::SongTitle, SourceKind::Text, 0.0f, 0.0f},
+  {Source::SongArtist, SourceKind::Text, 0.0f, 0.0f},
+  {Source::ServiceKm, SourceKind::Number, 0.0f, 800.0f},
+  {Source::BlinkerLeft, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::BlinkerRight, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::HighBeam, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::Neutral, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::Light, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::AlarmArmed, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::GpsFix, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::BtConnected, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::ShiftLight, SourceKind::Bool, 0.0f, 0.0f},
+  {Source::Warning, SourceKind::Bool, 0.0f, 0.0f},
+};
+
+constexpr size_t kSourceCount = 31;
 
 enum class Icon : uint8_t {
   None = 0,  // Kein Symbol

@@ -285,7 +285,7 @@ Diese Regeln gelten für den Tacho und für die Vorschau im Designer (`designer/
 
 **Kontrollleuchte:** Das Symbol füllt den Rahmen (kleinere Seite). Ist die Quelle „an“, wird `on_color` benutzt, sonst `off_color`. Mit `blink` wechselt ein eingeschaltetes Symbol im Takt von 2 Hz zwischen an und aus. Blinker-Eingänge pulsieren schon selbst und brauchen `blink` nicht.
 
-**Fläche:** gefülltes Rechteck in `color` mit `radius` abgerundeten Ecken und optionalem Rahmen. Linien sind Flächen mit 1 Pixel Höhe oder Breite.
+**Fläche:** gefülltes Rechteck in `color` mit `radius` abgerundeten Ecken. Ist `border_width` größer als 0, liegt ein Rahmen in `border_color` dieser Breite innerhalb der Fläche, die Fläche wird dadurch nicht größer. Linien sind Flächen mit 1 Pixel Höhe oder Breite.
 
 **Bild:** Das Bild wird in Originalgröße mit seiner linken oberen Ecke an X/Y gezeichnet und am Rahmen des Elements abgeschnitten. Es wird nicht skaliert. Die richtige Größe stellt der Designer beim Laden ein. Alpha wird mit dem gemischt, was darunter liegt. Fehlt das Bild mit der angegebenen Nummer, zeichnet der Tacho nichts.
 

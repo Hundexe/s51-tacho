@@ -1,2 +1,4 @@
 *.bat text eol=crlf
 *.s51 binary
+*.bin binary
+*.ttf binary
