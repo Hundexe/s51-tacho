@@ -58,11 +58,15 @@ constexpr int PIN_GPS_RX     = 21;  // UART-Eingang vom GPS-Modul
 constexpr uint8_t I2C_ADDR_MCP23017 = 0x20;  // Ein-/Ausgänge
 constexpr uint8_t I2C_ADDR_BH1750   = 0x23;  // Umgebungslicht
 constexpr uint8_t I2C_ADDR_PN532    = 0x24;  // NFC (optional, Entschärfen)
-constexpr uint8_t I2C_ADDR_ADS1115  = 0x48;  // Bordspannung
-constexpr uint8_t I2C_ADDR_MCP9600  = 0x60;  // Zylinderkopftemperatur
-constexpr uint8_t I2C_ADDR_DS3231   = 0x68;  // Uhr
-constexpr uint8_t I2C_ADDR_LSM6DS3  = 0x6A;  // Lage / Alarm-Bestätigung
+constexpr uint8_t I2C_ADDR_ADS1115  = 0x48;  // Bordspannung, Kopftemperatur
+constexpr uint8_t I2C_ADDR_MPU6050  = 0x68;  // Lage / Alarm-Bestätigung
 constexpr uint8_t I2C_ADDR_BME280   = 0x76;  // Außentemperatur
+
+// ADS1115: Kanäle
+enum Ads1115Channel : uint8_t {
+  ADS_BORDSPANNUNG = 0,   // A0  Spannungsteiler 100 k / 22 k
+  ADS_KOPFTEMP     = 1,   // A1  PT1000 gegen 2,2 k an 3,3 V
+};
 
 // MCP23017: Belegung der Ports (A = Eingänge, B = Taster/Ausgänge)
 enum Mcp23017Pin : uint8_t {

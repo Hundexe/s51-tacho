@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.3, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.4, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -8,6 +8,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.1: Dauerplus mit Wächterschaltung, im Stand bleibt nur die Bewegungserkennung wach.
 - 1.2: Alarm gibt einen Ton aus. Entschärfen mit Zündschlüssel, PIN oder NFC-Tag.
 - 1.3: Für den Nachbau umgeschrieben, Stückliste in eigene Datei ausgelagert.
+- 1.4: Günstiger: Kopftemperatur mit PT1000 am ADS1115 statt Thermoelement und MCP9600. Uhr-Modul entfällt, Uhrzeit kommt von GPS und iPhone. GPS-Modul mit u-blox M8 oder M10. Lagesensor MPU6050 statt LSM6DS3 (günstiger, die Adresse ist ohne Uhr-Modul frei).
 
 ---
 
@@ -51,10 +52,8 @@ Die komplette Belegung steht im Code in `firmware/include/pins.h`.
 | MCP23017 | 0x20 | Blinker L/R, Fernlicht, Leerlauf, Zündung an, Licht an, 3 Taster, Reserve |
 | BH1750 | 0x23 | Umgebungslicht für automatische Helligkeit |
 | PN532 | 0x24 | NFC-Leser zum Entschärfen (optional) |
-| ADS1115 | 0x48 | Bordspannung, 3 Kanäle Reserve |
-| MCP9600 | 0x60 | Zylinderkopftemperatur (Typ K), misst nebenbei die Temperatur in der Lampe |
-| DS3231 | 0x68 | Uhr mit Knopfzelle |
-| LSM6DS3 | 0x6A | Schräglage, bestätigt beim Alarm echte Bewegung |
+| ADS1115 | 0x48 | A0 Bordspannung, A1 Zylinderkopftemperatur (PT1000), A2–A3 Reserve |
+| MPU6050 | 0x68 | Schräglage, bestätigt beim Alarm echte Bewegung, misst nebenbei die Temperatur in der Lampe |
 | BME280 | 0x76 | Außentemperatur, Glättewarnung |
 
 ---
@@ -62,7 +61,8 @@ Die komplette Belegung steht im Code in `firmware/include/pins.h`.
 ## 3. Sensoren im Detail
 
 ### 3.1 Geschwindigkeit
-- **GPS:** u-blox-M10-Modul mit 10 Hz, sitzt in der Lampenschale. Liefert auch Uhrzeit und Strecke fürs Fahrtenbuch.
+- **GPS:** Modul mit u-blox M8 oder M10 (GPS + GLONASS/Galileo, bis 10 Hz), sitzt in der Lampenschale. Liefert auch Uhrzeit und Strecke fürs Fahrtenbuch.
+  - Ein NEO-6M funktioniert notfalls auch, empfängt aber nur GPS-Satelliten und schafft höchstens 5 Hz. Die Geschwindigkeit ist damit träger und in Tälern oder zwischen Häusern ungenauer.
 - **Hall (nachrüstbar):** Näherungssensor NJK-5002C (M12, NPN, 6–36 V, wasserdicht) an der Gabel, 2 Neodym-Magnete an Nabe oder Bremstrommel. Das Signal läuft über einen Kanal der Optokoppler-Platine an GPIO 11, weil der Sensor mit 12 V arbeitet.
 - **Automatische Kalibrierung:** Mit GPS lernt der Tacho den Radumfang selbst.
 - Start nur mit GPS, der Original-Tacho bleibt als Rückfallebene.
@@ -78,9 +78,12 @@ Die komplette Belegung steht im Code in `firmware/include/pins.h`.
 - Leerlauf: Die Kontrolllampe schaltet über den Leerlaufschalter nach Masse, der Optokoppler wird passend dazu angeschlossen.
 
 ### 3.4 Temperaturen
-- **Zylinderkopf:** Thermoelement-Ring Typ K für 14-mm-Zündkerze, Leitung bis zum MCP9600 in der Lampe.
+- **Zylinderkopf:** PT1000-Temperaturfühler (Ersatzteil für 3D-Drucker-Hotends, hält über 400 °C aus).
+  - Steckt in einem kleinen Alu-Halter, der unter eine Zylinderkopfmutter geklemmt wird.
+  - Ausgewertet über einen Spannungsteiler (Festwiderstand 2,2 kΩ an 3,3 V) am Kanal A1 des ADS1115. Kein eigenes Modul nötig.
+  - Gemessen wird am Zylinderkopf statt unter der Zündkerze, die Werte liegen deshalb etwas niedriger. Die Warnschwelle wird bei der ersten Ausfahrt angepasst.
 - **Außen:** BME280 in einer belüfteten Kammer an der Unterseite der Lampenschale, weg von der Birne.
-- **Gehäuse:** kommt gratis vom MCP9600.
+- **Gehäuse:** kommt gratis vom eingebauten Temperatursensor des MPU6050.
 
 ### 3.5 Bedienung, Musik und iPhone
 - **Tasterpod:** 3× IP67-Taster in einer Schelle für den 22-mm-Lenker.
@@ -126,7 +129,7 @@ Batterie +12 V (Dauerplus)
 3. Der Lagesensor prüft etwa 2 s, ob sich das Moped wirklich bewegt oder neigt.
 4. Echte Bewegung: Alarmton, z. B. 30 s lang, danach erneut scharf.
 5. Fehlauslösung: sofort wieder aus. Empfindlichkeit einstellbar, nach mehreren Fehlauslösungen pro Stunde kurze Pause.
-6. Jede Auslösung landet mit Uhrzeit im Alarm-Protokoll.
+6. Jede Auslösung landet im Alarm-Protokoll, mit Uhrzeit, sobald GPS oder iPhone die Zeit geliefert hat.
 
 **Alarmton**
 - Über den Audio-Verstärker des Boards (NS4168, 2,5 W an 4 Ω) und einen wasserfesten 4-Ω-Lautsprecher (ca. 40–50 mm) in der Lampenschale.
@@ -169,7 +172,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
   - Erschütterungsschalter fest verschraubt
   - NFC-Leser direkt hinter einer dünnen Wandstelle (optional)
   - Belüftungsmembran gegen Beschlagen
-- **Unten:** zwei wasserdichte Stecker (z. B. Deutsch DT oder Superseal) plus eine Kabelverschraubung für das Thermoelement.
+- **Unten:** zwei wasserdichte Stecker (z. B. Deutsch DT oder Superseal) plus eine Kabelverschraubung für die Leitung des Temperaturfühlers.
 - **Befestigung:** an den originalen Lampenhaltern der Gabel.
 - **Fenster:** für den Lichtsensor neben dem Display.
 - **Material:** ASA, Wandstärke ≥ 3 mm, 4–5 Perimeter.
@@ -184,6 +187,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - **Startmodus:** Zuerst wird geprüft, warum der Tacho an ist. Zündung → Entsperren oder Fahransicht. Keine Zündung → Alarmprüfung ohne Display.
 - **Tasks:** Sensoren (Interrupts, GPS, I²C mit 20 Hz), Oberfläche (30 fps), Speicher und Fahrtenbuch, Bluetooth.
 - **Speicher:** 16 MB Flash mit zwei App-Bereichen für Updates per WLAN, dazu Dateisystem für Einstellungen.
+- **Uhrzeit:** Es gibt kein eigenes Uhr-Modul. Die Zeit kommt vom GPS, sobald es Satelliten empfängt, oder vom iPhone, sobald es per Bluetooth verbunden ist (iOS stellt die Uhrzeit für verbundene Geräte bereit). Bis dahin zeigt die Uhr „--:--“.
 - **Kilometerstand:** im NVS mit Verschleißausgleich, alle 100 m und beim Abschalten.
 - **Seiten:**
   - Fahrt („Klar“), mit Songtitel-Zeile wenn Musik läuft
@@ -208,7 +212,7 @@ Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste
 
 1. **Display am Schreibtisch:** Demo-Fahransicht, Touch-Test (Code liegt in `firmware/`).
 2. **Oberfläche mit LVGL:** alle Seiten, Startbild, Nachtmodus, Sperrbildschirm mit PIN.
-3. **I²C-Module am Tisch:** Uhr, Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
+3. **I²C-Module am Tisch:** Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
 4. **GPS und Drehzahl:** Drehzahl-Impulse simuliert mit einem zweiten Mikrocontroller.
 5. **Stromversorgung und Alarm:** Schutz-, Selbsthaltungs- und Wächterschaltung, Ruhestrom messen, Alarmton.
 6. **Provisorischer Einbau:** Probefahrten, Kalibrierung, Gänge anlernen, Alarm-Empfindlichkeit.

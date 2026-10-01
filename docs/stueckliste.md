@@ -46,33 +46,25 @@ Alle Module werden mit **3,3 V** betrieben (Regler in Abschnitt 5.3). So kommt n
   Port-Erweiterung mit 16 Ein-/Ausgängen über I²C. Liest Blinker, Fernlicht, Leerlauf, Zündung, Licht und die drei Lenkertaster ein, weil das Board selbst nur 6 freie Pins hat.
   Suche: `MCP23017 I2C module`
 - [ ] **1× ADS1115-Modul** · Phase 3
-  Präziser Analog-Digital-Wandler. Misst die Bordspannung, um vor Problemen mit Laderegler oder Batterie zu warnen.
+  Präziser Analog-Digital-Wandler mit 4 Eingängen. Misst die Bordspannung (A0), um vor Problemen mit Laderegler oder Batterie zu warnen, und die Zylinderkopftemperatur über den PT1000 (A1).
   Suche: `ADS1115 module`
-- [ ] **1× MCP9600-Modul** · Phase 3
-  Wandelt das winzige Signal des Thermoelements in eine Temperatur um. Misst nebenbei die Temperatur im Lampengehäuse.
-  Suche: `MCP9600 thermocouple module`
-- [ ] **1× Thermoelement-Ring Typ K für Zündkerze M14**, Leitung mind. 1,5 m · Phase 3
-  Wird unter die Zündkerze geklemmt und misst die Zylinderkopftemperatur. Warnt, bevor der Zweitakter zu heiß wird und klemmt.
-  Suche: `K type thermocouple spark plug 14mm`
-- [ ] **1× DS3231-Modul** · Phase 3
-  Genaue Uhr für die Zeitanzeige und das Fahrtenbuch. Läuft mit Knopfzelle weiter, auch wenn der Tacho stromlos ist.
-  Suche: `DS3231 RTC module`
-  **Wichtig:** Viele dieser Module haben eine Ladeschaltung für Akkus. Mit einer normalen CR2032 die Diode (oder den Widerstand davor) auf dem Modul auslöten, sonst wird die Zelle beschädigt.
-- [ ] **1× Knopfzelle CR2032** · Phase 3
-  Hält die Uhr am Laufen, wenn das Moped abgestellt ist.
-  Suche: `CR2032 battery`
-- [ ] **1× LSM6DS3-Modul** · Phase 3
-  Lagesensor. Zeigt beim Fahren die Schräglage an und prüft beim Alarm, ob sich das Moped wirklich bewegt. Kein MPU6050 nehmen, der hat dieselbe Adresse wie die Uhr.
-  Suche: `LSM6DS3 module`
+- [ ] **1× PT1000-Temperaturfühler für 3D-Drucker**, Patrone Ø 3 mm, Leitung ca. 1 m · Phase 3
+  Misst die Zylinderkopftemperatur und warnt, bevor der Zweitakter zu heiß wird und klemmt. Hält über 400 °C aus. Steckt in einem kleinen Halter aus Alu-Blech (Abschnitt 10), der unter eine Zylinderkopfmutter geklemmt wird. Bis zur Lampe wird die Leitung mit normaler Litze verlängert, das verfälscht den Messwert nicht.
+  Suche: `PT1000 3D printer thermistor cartridge`
+  Prüfen: PT1000, nicht PT100 und nicht NTC 100K.
+- [ ] **1× MPU6050-Modul (GY-521)** · Phase 3
+  Lagesensor. Zeigt beim Fahren die Schräglage an, prüft beim Alarm, ob sich das Moped wirklich bewegt, und misst nebenbei die Temperatur in der Lampe.
+  Suche: `GY-521 MPU6050`
 - [ ] **1× BME280-Modul, 3,3-V-Ausführung** · Phase 3
   Misst die Außentemperatur für die Anzeige und die Glättewarnung unter 3 °C.
   Suche: `BME280 module 3.3V`
 - [ ] **1× BH1750-Modul (GY-302)** · Phase 3
   Lichtsensor. Regelt die Displayhelligkeit automatisch und schaltet bei Dunkelheit in den Nachtmodus.
   Suche: `BH1750 GY-302`
-- [ ] **1× GPS-Modul mit u-blox M10**, UART, 3,3 V, mit Antenne · Phase 4
-  Liefert die Geschwindigkeit, die genaue Uhrzeit und die Strecke fürs Fahrtenbuch. Mit Pufferbatterie oder Supercap findet es nach dem Einschalten schneller Satelliten.
-  Suche: `u-blox M10 GPS module`
+- [ ] **1× GPS-Modul mit u-blox M8 oder M10**, UART, 3,3 V, mit Antenne · Phase 4
+  Liefert die Geschwindigkeit, die Uhrzeit und die Strecke fürs Fahrtenbuch. Ein eigenes Uhr-Modul gibt es nicht, die Zeit kommt von hier oder vom iPhone. Mit Pufferbatterie oder Supercap findet es nach dem Einschalten schneller Satelliten.
+  Suche: `BN-220 GPS` oder `u-blox M10 GPS module`
+  Prüfen: u-blox M8 oder M10 (empfängt mehrere Satellitensysteme, bis 10 Hz). Ein NEO-6M geht notfalls, empfängt aber nur GPS und schafft höchstens 5 Hz, die Geschwindigkeit wird damit träger.
 
 ## 4. Eingänge vom Moped
 
@@ -157,7 +149,7 @@ Alles, was vom Moped in die Lampe geht, läuft über Steckverbindungen. Dann lä
   Tasterpod-Stecker.
   Suche: `Deutsch DT 4 pin connector with wire`
 - [ ] **1× Kabelverschraubung M12 × 1,5, IP68**, für Kabel-Ø 3–6 mm · Phase 7
-  Führt die Thermoelement-Leitung dicht ins Gehäuse. Die Leitung bleibt am Stück, weil Stecker das Messsignal verfälschen würden.
+  Führt die Leitung des Temperaturfühlers dicht ins Gehäuse.
   Suche: `cable gland M12 IP68`
 - [ ] **1× Kabelverschraubung M16 × 1,5, IP68** · Phase 7
   Führt das vorhandene Scheinwerfer-Kabel dicht in die neue Lampenschale.
@@ -241,7 +233,7 @@ Alles, was vom Moped in die Lampe geht, läuft über Steckverbindungen. Dann lä
   Lässt Luft, aber kein Wasser durch. Verhindert, dass das Display von innen beschlägt, wenn sich das Gehäuse erwärmt und abkühlt.
   Suche: `M12 breather vent waterproof`
 - [ ] **1× Alu-Blech 0,5–1 mm, ca. 100 × 100 mm** · Phase 7
-  Hitzeschild zwischen Scheinwerferbirne und Elektronik.
+  Hitzeschild zwischen Scheinwerferbirne und Elektronik. Ein Streifen davon wird zum Halter für den PT1000 am Zylinderkopf gebogen.
   Suche: `aluminum sheet 1mm 100x100`
 - [ ] **1× Doppelseitiges Klebeband, Typ VHB** · Phase 7
   Hält GPS-Antenne und Lautsprecher vibrationsfest im Gehäuse.
