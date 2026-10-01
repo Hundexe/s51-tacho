@@ -109,6 +109,30 @@ class WebappTests(unittest.TestCase):
         self.assertIn("fahrzeug.magnete", v["errors"])
         self.assertEqual(v["values"]["warnungen.spannung_min"], 11.5)
 
+    def test_sd_card(self):
+        """Schreiben auf die Karte übernimmt Python (Edge/Chrome dürfen unter Windows keine .cfg anlegen)."""
+        self.assertIn("drives", self.req("/api/sd/drives"))
+        self.assertEqual(self.status("/api/sd/read", json_body={"path": "/gibt/es/nicht"}), 400)
+        with tempfile.TemporaryDirectory() as card:
+            info = self.req("/api/sd/read", json_body={"path": card})
+            self.assertEqual((info["designs"], info["config"]), ([], None))
+            layout = self.req("/api/preset?name=Klar")
+            cfg = webapp.cfg_to_json(config_format.defaults())
+            cfg["fahrzeug.magnete"] = 4
+            self.req("/api/sd/write", json_body={"path": card, "layout": layout, "file_name": "klar.s51",
+                                                 "default": "klar.s51", "values": cfg})
+            d = os.path.join(card, "s51")
+            self.assertEqual(sorted(os.listdir(d)), ["klar.s51", "tacho.cfg"])
+            info = self.req("/api/sd/read", json_body={"path": card})
+            self.assertEqual(info["designs"], ["klar.s51"])
+            self.assertEqual(info["config"]["fahrzeug.magnete"], 4)
+            # nur das Standard-Design ändern, Einstellungen auf der Karte behalten
+            self.req("/api/sd/write", json_body={"path": d, "layout": None, "default": "klar.s51", "values": None})
+            values, _ = config_format.load(os.path.join(d, "tacho.cfg"))
+            self.assertEqual(values[("fahrzeug", "magnete")], 4)
+            r = self.req("/api/sd/save_config", json_body={"path": card, "values": cfg})
+            self.assertTrue(os.path.exists(r["file"]))
+
     def test_wireless(self):
         with tempfile.TemporaryDirectory() as tmp:
             httpd, _ = mock_tacho.serve(0, "123456", tmp, verbose=False)

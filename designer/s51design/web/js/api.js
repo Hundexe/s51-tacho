@@ -42,6 +42,10 @@ export const api = {
   configDump: (values) => call("config/dump", { method: "POST", json: { values } }),
   configValidate: (values) => call("config/validate", { method: "POST", json: { values } }),
   wireless: (payload) => call("wireless", { method: "POST", json: payload }),
+  sdDrives: () => call("sd/drives"),
+  sdRead: (path) => call("sd/read", { method: "POST", json: { path } }),
+  sdWrite: (payload) => call("sd/write", { method: "POST", json: payload }),
+  sdSaveConfig: (payload) => call("sd/save_config", { method: "POST", json: payload }),
 };
 
 // Lebenszeichen, damit der Server weiß, dass das Fenster offen ist

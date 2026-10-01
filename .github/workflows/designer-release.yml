@@ -39,6 +39,11 @@ jobs:
           python-version: "3.12"
       - name: PyInstaller installieren
         run: python -m pip install pyinstaller==6.10.0
+      - name: Laufwerkssuche unter Windows prüfen (SD-Karte)
+        working-directory: designer
+        run: >
+          python -c "from s51design import sdcard; d = sdcard._windows_drives(); print('Wechseldatenträger:', d);
+          assert isinstance(d, list); print('Dokumente:', sdcard.documents_dir())"
       - name: exe bauen
         working-directory: designer
         run: >

@@ -6,7 +6,7 @@ Aktueller Stand: **Phase 2**, der Tacho zeigt Layouts aus dem [S51 Designer](../
 
 ## Bedienung
 
-**Designs auf die SD-Karte bringen:** microSD-Karte (FAT32, bis 32 GB) am PC einlegen, im Designer *Datei → Auf SD-Karte exportieren* wählen. Der Designer schreibt das Design als `<name>.s51` in den Ordner `s51` und legt in der `tacho.cfg` fest, welches Design beim Start gilt (Standard-Design). So lassen sich beliebig viele Designs auf die Karte legen. Karte in den Slot des Displays stecken und den Tacho neu starten.
+**Designs auf die SD-Karte bringen:** microSD-Karte (FAT32, bis 32 GB) am PC einlegen, im Designer **Auf SD-Karte** wählen. Der Designer schreibt das Design als `<name>.s51` in den Ordner `s51` und legt in der `tacho.cfg` fest, welches Design beim Start gilt (Standard-Design). So lassen sich beliebig viele Designs auf die Karte legen. Karte in den Slot des Displays stecken und den Tacho neu starten.
 
 **Beim Start**
 1. `s51/tacho.cfg` wird gelesen. Fehlt sie, gelten die Standardwerte ([docs/konfiguration.md](../docs/konfiguration.md)).

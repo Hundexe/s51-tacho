@@ -303,6 +303,8 @@ select.field { appearance: none; padding-right: 26px;
 .choice:hover { background: var(--raised); }
 .choice input { accent-color: var(--needle); }
 .choice .tag { margin-left: auto; color: var(--ivory-faint); font-size: 12px; }
+button.choice { width: 100%; background: transparent; color: var(--ivory); font: inherit; text-align: left; }
+button.choice b { margin-right: 6px; }
 
 .toast-root { position: fixed; right: 18px; bottom: 40px; display: grid; gap: 8px; z-index: 200; }
 .toast { background: var(--raised); border: 1px solid var(--line); border-left: 3px solid var(--green); border-radius: var(--radius-m);

@@ -2,12 +2,19 @@
 
 Auf der Karte liegen im Ordner s51 beliebig viele Designs (.s51) und die
 tacho.cfg. Welches Design beim Start gilt, steht in der tacho.cfg unter
-anzeige.layout_datei (Standard-Design). Am Tacho lässt sich durch langes
-Drücken ein anderes wählen, siehe firmware/README.md.
+anzeige.layout_datei (Standard-Design). Am Tacho lässt sich im Menü ein
+anderes wählen, siehe firmware/README.md.
+
+Geschrieben wird vom Python-Teil des Designers, nicht vom Browser: Edge und
+Chrome lassen unter Windows keine Dateien mit der Endung .cfg anlegen
+(gelten dort als gefährlich).
 """
 
 import os
 import re
+import shutil
+import string
+import sys
 import unicodedata
 
 from . import config_format
@@ -15,6 +22,73 @@ from . import config_format
 DIR_NAME = "s51"
 CFG_NAME = "tacho.cfg"
 MAX_NAME = 40
+
+
+def _drive_entry(path, label, removable):
+    try:
+        usage = shutil.disk_usage(path)
+        size, free = usage.total, usage.free
+    except OSError:
+        size = free = 0
+    return {"path": path, "label": label, "removable": removable, "size": size, "free": free,
+            "has_s51": os.path.isdir(os.path.join(path, DIR_NAME))}
+
+
+def _windows_drives():
+    import ctypes
+    k = ctypes.windll.kernel32
+    old = k.SetErrorMode(1)          # keine Windows-Meldung „Kein Datenträger“ bei leeren Lesern
+    out = []
+    try:
+        mask = k.GetLogicalDrives()
+        for i, letter in enumerate(string.ascii_uppercase):
+            if not (mask >> i) & 1:
+                continue
+            root = f"{letter}:\\"
+            if k.GetDriveTypeW(ctypes.c_wchar_p(root)) != 2:    # 2 = Wechseldatenträger
+                continue
+            label = ctypes.create_unicode_buffer(261)
+            if not k.GetVolumeInformationW(ctypes.c_wchar_p(root), label, 261, None, None, None, None, 0):
+                continue                 # Leser ohne Karte
+            out.append(_drive_entry(root, label.value or "Wechseldatenträger", True))
+    finally:
+        k.SetErrorMode(old)
+    return out
+
+
+def _mounted_volumes():
+    """Eingehängte Datenträger unter Linux und macOS."""
+    if sys.platform == "darwin":
+        candidates = [os.path.join("/Volumes", n) for n in _listdir("/Volumes")]
+        candidates = [c for c in candidates if not os.path.islink(c)]       # Startvolume ist ein Link
+    else:
+        candidates = []
+        for base in ("/media", "/run/media"):
+            for user in _listdir(base):
+                p = os.path.join(base, user)
+                subs = [os.path.join(p, n) for n in _listdir(p)]
+                candidates += subs if subs and all(os.path.isdir(s) for s in subs) and not os.path.ismount(p) else [p]
+    return [_drive_entry(c, os.path.basename(c), True) for c in sorted(candidates) if os.path.ismount(c)]
+
+
+def _listdir(p):
+    try:
+        return sorted(os.listdir(p))
+    except OSError:
+        return []
+
+
+def drives():
+    """Wechseldatenträger (SD-Karten, USB-Sticks), die gerade eingesteckt sind."""
+    try:
+        return _windows_drives() if os.name == "nt" else _mounted_volumes()
+    except (OSError, AttributeError, ValueError):
+        return []
+
+
+def documents_dir():
+    d = os.path.join(os.path.expanduser("~"), "Documents")
+    return d if os.path.isdir(d) else os.path.expanduser("~")
 
 
 def target_dir(chosen):
@@ -70,14 +144,16 @@ def card_config(directory):
 def export(directory, data, file_name, default_name, cfg=None):
     """Schreibt ein Design und legt das Standard-Design fest.
 
+    data/file_name None: kein Design schreiben, nur das Standard-Design eintragen.
     cfg: Einstellungen aus dem Designer. None heißt: Einstellungen auf der Karte
     behalten (oder Standardwerte, wenn es dort keine gibt) und nur das
     Standard-Design ändern. Gibt die geschriebene tacho.cfg als Werte zurück.
     """
-    file_name = clean_file_name(file_name)
     os.makedirs(directory, exist_ok=True)
-    with open(os.path.join(directory, file_name), "wb") as f:
-        f.write(data)
+    if data is not None:
+        file_name = clean_file_name(file_name)
+        with open(os.path.join(directory, file_name), "wb") as f:
+            f.write(data)
     values = dict(cfg) if cfg is not None else (card_config(directory) or config_format.defaults())
     values[("anzeige", "layout_datei")] = clean_file_name(default_name)
     config_format.save(values, os.path.join(directory, CFG_NAME))

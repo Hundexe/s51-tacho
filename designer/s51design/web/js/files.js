@@ -6,7 +6,6 @@ import { askSave, showError, toast } from "./ui.js";
 
 const S51_TYPES = [{ description: "S51-Layout", accept: { "application/octet-stream": [".s51"] } }];
 export const canPickFiles = "showOpenFilePicker" in window;
-export const canPickFolder = "showDirectoryPicker" in window;
 
 export function slugFileName(name) {
   let s = (name || "").trim().toLowerCase()

@@ -1,7 +1,7 @@
 // Dialoge: Vorlagen, Bild laden, SD-Karte, Tacho-Einstellungen, Drahtlos
 
 import { api } from "./api.js";
-import { canPickFolder, cleanFileName, confirmDiscard, download, pickWithInput, slugFileName } from "./files.js";
+import { cleanFileName, confirmDiscard, pickWithInput, slugFileName } from "./files.js";
 import { icon } from "./icons.js";
 import { model } from "./model.js";
 import { demoValues, renderThumb } from "./render.js";
@@ -119,60 +119,87 @@ export async function importImage() {
 }
 
 // -- SD-Karte -----------------------------------------------------------------------
+// Geschrieben wird vom Python-Teil des Designers. Der Browser darf unter Windows keine
+// .cfg-Dateien anlegen (Edge und Chrome halten die Endung für gefährlich).
 
-async function readText(dir, name) {
-  try {
-    const f = await (await dir.getFileHandle(name)).getFile();
-    return await f.text();
-  } catch (e) {
-    return null;
-  }
+function gb(bytes) {
+  return bytes ? `${(bytes / 1e9).toFixed(1).replace(".", ",")} GB` : "";
 }
 
-async function writeFile(dir, name, data) {
-  const fh = await dir.getFileHandle(name, { create: true });
-  const w = await fh.createWritable();
-  await w.write(data);
-  await w.close();
+// Laufwerk oder Ordner wählen. Gibt den Pfad zurück oder null.
+// documents: zusätzlich den Ordner „Dokumente“ anbieten.
+export function pickFolder({ title, intro, documents = false, auto = false }) {
+  return new Promise((resolve) => {
+    let result = null;
+    const list = h("div", { class: "choice-list" });
+    const pathInput = h("input", { class: "field", placeholder: navigator.platform.startsWith("Win") ? "z. B. E:\\" : "z. B. /media/sd", spellcheck: "false" });
+    let dlg = null;
+    const choose = (path) => { result = path; dlg.close(); };
+    const load = async () => {
+      list.replaceChildren(h("p", { class: "note" }, "Suche Laufwerke …"));
+      let info;
+      try {
+        info = await api.sdDrives();
+      } catch (e) {
+        list.replaceChildren(h("p", { class: "note" }, e.message));
+        return;
+      }
+      if (auto && info.drives.length === 1) { choose(info.drives[0].path); return; }
+      const rows = info.drives.map((d) => h("button", { class: "choice drive", onclick: () => choose(d.path) },
+        h("span", { html: icon("sd") }), h("span", {}, h("b", {}, d.label), " ", d.path),
+        h("span", { class: "tag" }, [gb(d.size), d.has_s51 ? "Ordner s51 vorhanden" : ""].filter(Boolean).join(", "))));
+      if (documents && info.documents) {
+        rows.push(h("button", { class: "choice drive", onclick: () => choose(info.documents) },
+          h("span", { html: icon("open") }), h("span", {}, h("b", {}, "Dokumente"), " ", info.documents)));
+      }
+      list.replaceChildren(...(rows.length ? rows
+        : [h("p", { class: "note" }, "Keine SD-Karte gefunden. Karte einstecken und „Neu suchen“ drücken, oder unten den Ordner eintragen.")]));
+    };
+    dlg = modal({
+      title,
+      body: h("div", {},
+        intro ? h("p", { class: "note", style: { marginTop: 0 } }, intro) : null,
+        list,
+        h("div", { class: "cfg-item" },
+          h("div", { class: "cfg-key", style: { marginBottom: "6px" } }, "Anderer Ordner"),
+          h("div", { style: { display: "flex", gap: "8px" } }, pathInput,
+            h("button", { class: "btn", onclick: () => { if (pathInput.value.trim()) choose(pathInput.value.trim()); } }, "Öffnen")))),
+      actions: [
+        { label: "Neu suchen", ghost: true, close: false, run: load },
+        { label: "Abbrechen", ghost: true },
+      ],
+      onClose: () => resolve(result),
+    });
+    pathInput.addEventListener("keydown", (e) => { if (e.key === "Enter" && pathInput.value.trim()) choose(pathInput.value.trim()); });
+    load();
+  });
 }
 
-export async function exportDialog() {
-  let bytes;
+// again = true: Laufwerk immer wählen lassen („Anderes Laufwerk“). Beim Aufruf aus der
+// Oberfläche kommt hier das Klick-Ereignis an, das zählt nicht.
+export async function exportDialog(again = false) {
+  again = again === true;
   try {
-    bytes = await api.encode(model.layout);
+    await api.check(model.layout).then((r) => { if (!r.ok) throw new Error(r.error); });
   } catch (e) {
     showError(new Error(`Layout ist nicht gültig: ${e.message}`));
     return;
   }
-  if (!canPickFolder) {
-    download(bytes, slugFileName(model.layout.name));
-    const text = (await api.configDump(cfg.values)).text;
-    download(new TextEncoder().encode(text), "tacho.cfg", "text/plain");
-    toast("Dateien heruntergeladen. Beide in den Ordner s51 der SD-Karte kopieren.");
-    return;
-  }
-  let root;
+  const path = await pickFolder({
+    title: "Auf SD-Karte schreiben", auto: !again,
+    intro: "Karte des Tachos am PC einstecken und das Laufwerk wählen. Der Designer legt darauf den Ordner s51 an.",
+  });
+  if (!path) return;
   try {
-    root = await window.showDirectoryPicker({ id: "s51-sd", mode: "readwrite" });
-  } catch (e) {
-    return;
-  }
-  try {
-    const dir = root.name.toLowerCase() === "s51" ? root : await root.getDirectoryHandle("s51", { create: true });
-    const existing = [];
-    for await (const [name, handle] of dir.entries()) {
-      if (handle.kind === "file" && name.toLowerCase().endsWith(".s51") && !name.startsWith(".")) existing.push(name);
-    }
-    existing.sort();
-    const cfgText = await readText(dir, "tacho.cfg");
-    const cardValues = cfgText !== null ? (await api.configParse(cfgText)).values : null;
-    showExportForm(dir, bytes, existing, cardValues);
+    const card = await api.sdRead(path);
+    showExportForm(path, card);
   } catch (e) {
     showError(new Error(`Karte kann nicht gelesen werden: ${e.message}`));
   }
 }
 
-function showExportForm(dir, bytes, existing, cardValues) {
+function showExportForm(path, card) {
+  const existing = card.designs, cardValues = card.config;
   const currentDefault = (cardValues || cfg.values)["anzeige.layout_datei"];
   const nameInput = h("input", { class: "field", value: slugFileName(model.layout.name), spellcheck: "false" });
   const writeLayout = h("input", { type: "checkbox", role: "switch" });
@@ -215,20 +242,25 @@ function showExportForm(dir, bytes, existing, cardValues) {
   writeLayout.addEventListener("change", () => { nameInput.disabled = !writeLayout.checked; refresh(); });
   refresh();
 
+  let dlg = null;
   const body = h("div", {},
+    h("div", { class: "cfg-item", style: { display: "flex", alignItems: "center", gap: "10px" } },
+      h("span", { html: icon("sd") }), h("span", {}, "Karte: ", h("b", {}, card.dir)),
+      h("button", { class: "btn ghost", style: { marginLeft: "auto" },
+        onclick: () => { dlg.close(); exportDialog(true); } }, "Anderes Laufwerk")),
     h("div", { class: "cfg-item" },
       h("label", { class: "check" }, writeLayout, `Design „${model.layout.name}“ speichern als`),
       h("div", { style: { marginTop: "8px" } }, nameInput), hint),
     h("div", { class: "cfg-item" },
       h("div", { class: "cfg-key", style: { marginBottom: "8px" } }, "Standard-Design beim Start"),
       choices,
-      h("div", { class: "cfg-desc" }, "Am Tacho lässt sich durch langes Drücken jederzeit ein anderes Design wählen. Ein hier neu festgelegter Standard gilt beim nächsten Start.")),
+      h("div", { class: "cfg-desc" }, "Am Tacho lässt sich im Menü (lange drücken, „Design“) jederzeit ein anderes Design wählen. Ein hier neu festgelegter Standard gilt beim nächsten Start.")),
     h("p", { class: "note" }, cfg.loaded
       ? "Die Tacho-Einstellungen aus dem Designer werden mit auf die Karte geschrieben."
       : cardValues ? "Die Einstellungen in der tacho.cfg auf der Karte bleiben erhalten, nur das Standard-Design wird eingetragen."
         : "Auf der Karte liegt noch keine tacho.cfg. Sie wird mit Standardwerten angelegt."));
 
-  modal({
+  dlg = modal({
     title: "Auf SD-Karte schreiben", body,
     actions: [
       { label: "Abbrechen", ghost: true },
@@ -237,11 +269,10 @@ function showExportForm(dir, bytes, existing, cardValues) {
         let fileName = null;
         if (writeLayout.checked) fileName = cleanFileName(nameInput.value);
         const values = { ...(cfg.loaded ? cfg.values : cardValues || cfg.values), "anzeige.layout_datei": chosen };
-        if (fileName) await writeFile(dir, fileName, bytes);
-        const text = (await api.configDump(values)).text;
-        await writeFile(dir, "tacho.cfg", text);
+        await api.sdWrite({ path, layout: fileName ? model.layout : null, file_name: fileName, default: chosen, values });
         if (cfg.loaded) cfg.values["anzeige.layout_datei"] = chosen;
-        toast(fileName ? `${fileName} und tacho.cfg geschrieben. Standard: ${chosen}` : `Standard-Design auf ${chosen} gesetzt`);
+        toast(fileName ? `${fileName} und tacho.cfg geschrieben. Standard: ${chosen}. Karte vor dem Herausziehen auswerfen.`
+          : `Standard-Design auf ${chosen} gesetzt`, "ok", 6000);
         return true;
       } },
     ],
@@ -313,7 +344,11 @@ export function configDialog() {
       { label: "Als Datei speichern…", ghost: true, close: false, run: async ({ setMessage }) => {
         const res = await api.configValidate(draft);
         if (Object.keys(res.errors).length) { Object.assign(errors, res.errors); show(); setMessage("Bitte die markierten Werte korrigieren."); return; }
-        download(new TextEncoder().encode((await api.configDump(res.values)).text), "tacho.cfg", "text/plain");
+        const folder = await pickFolder({ title: "tacho.cfg speichern in …", documents: true,
+          intro: "Ordner wählen. Auf einer SD-Karte gehört die Datei in den Ordner s51." });
+        if (!folder) return;
+        const r = await api.sdSaveConfig({ path: folder, values: res.values });
+        setMessage(`Gespeichert: ${r.file}`, true);
       } },
       { label: "Übernehmen", primary: true, run: async ({ setMessage }) => {
         const res = await api.configValidate(draft);

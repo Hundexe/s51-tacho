@@ -24,7 +24,7 @@ Referenzfahrzeug: Simson S51B mit VAPE-Zündung (12 V) und Batterie.
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 | Display-Test mit Demo-Daten | **Auf echtem WT32-SC01 Plus getestet:** Firmware 0.1.0 läuft, Display und Touch funktionieren. Geflasht mit der Release-Datei über esptool-js im Browser |
-| 2 | Oberfläche | Firmware 0.5.0 mit Layouts, Design-Auswahl, Menü (lange drücken), Wartung, PIN und Sperrbildschirm, Alarm-Protokoll und WLAN-Übertragung, **auf dem Display getestet**. Firmware 0.6.0 bringt Musik per Bluetooth (Steuerung, beim iPhone Titel und Uhrzeit) und Tasten im Layout: am PC geprüft, **mit echtem Handy noch nicht getestet**. Alarmton folgt in Phase 5, Werte noch Demo-Werte. Designer 0.6.0 **unter Windows getestet**, Designer 0.7.0 (Taste, Musik-Quellen, Lenkertaster) **ungetestet** |
+| 2 | Oberfläche | Firmware 0.5.0 mit Layouts, Design-Auswahl, Menü (lange drücken), Wartung, PIN und Sperrbildschirm, Alarm-Protokoll und WLAN-Übertragung, **auf dem Display getestet**. Firmware 0.6.0 bringt Musik per Bluetooth (Steuerung, beim iPhone Titel und Uhrzeit) und Tasten im Layout: am PC geprüft, **mit echtem Handy noch nicht getestet**. Alarmton folgt in Phase 5, Werte noch Demo-Werte. Designer 0.6.0 **unter Windows getestet**, Designer 0.7.1 (Taste, Musik-Quellen, Lenkertaster, SD-Karte ohne Browser-Ordnerzugriff) **ungetestet**. In 0.6.0 bis 0.7.0 ging das Schreiben der tacho.cfg auf die SD-Karte unter Windows nicht |
 | 3 | I²C-Module | offen |
 | 4 | GPS und Drehzahl | offen |
 | 5 | Stromversorgung und Alarm | offen |

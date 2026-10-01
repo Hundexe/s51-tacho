@@ -28,7 +28,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from . import __version__, config_format, layout_format, presets, transfer
+from . import __version__, config_format, layout_format, presets, sdcard, transfer
 from . import images as I
 from . import schema as S
 
@@ -282,6 +282,51 @@ class Handler(BaseHTTPRequestHandler):
         if len(values.get("wlan.passwort", "")) < 8:
             errors["wlan.passwort"] = "mindestens 8 Zeichen"
         return {"values": values, "errors": errors}
+
+    # -- SD-Karte (schreibt der Python-Teil, siehe sdcard.py) ------------------------
+
+    def _sd_path(self, d):
+        path = str(d.get("path", "")).strip().strip('"')
+        if not path:
+            raise ApiError("Kein Laufwerk oder Ordner angegeben")
+        if not os.path.isdir(path):
+            raise ApiError(f"Ordner „{path}“ gibt es nicht. Ist die Karte eingesteckt?")
+        return path
+
+    def api_sd_drives(self, method, q):
+        return {"drives": sdcard.drives(), "documents": sdcard.documents_dir()}
+
+    def api_sd_read(self, method, q):
+        path = self._sd_path(self._body_json())
+        d = sdcard.target_dir(path)
+        values = sdcard.card_config(d)
+        return {"dir": d, "designs": sdcard.list_designs(d),
+                "config": cfg_to_json(values) if values is not None else None}
+
+    def api_sd_write(self, method, q):
+        b = self._body_json()
+        d = sdcard.target_dir(self._sd_path(b))
+        data, name = None, None
+        if b.get("layout") is not None:
+            data = layout_format.encode(layout_from_json(b["layout"]), tool=f"S51 Designer {__version__}")
+            name = sdcard.clean_file_name(str(b.get("file_name", "")))
+        values = cfg_from_json(b["values"]) if b.get("values") is not None else None
+        try:
+            sdcard.export(d, data, name, str(b.get("default", "")), values)
+        except OSError as e:
+            raise ApiError(f"Schreiben fehlgeschlagen: {e.strerror or e}")
+        return {"ok": True, "dir": d, "file_name": name}
+
+    def api_sd_save_config(self, method, q):
+        """tacho.cfg in einen Ordner schreiben (Tacho-Einstellungen → Als Datei speichern)."""
+        b = self._body_json()
+        path = self._sd_path(b)
+        target = os.path.join(path, sdcard.CFG_NAME)
+        try:
+            config_format.save(cfg_from_json(b["values"]), target)
+        except OSError as e:
+            raise ApiError(f"Schreiben fehlgeschlagen: {e.strerror or e}")
+        return {"ok": True, "file": target}
 
     def api_wireless(self, method, q):
         d = self._body_json()

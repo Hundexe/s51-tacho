@@ -20,7 +20,7 @@ Unter **Releases** auf der GitHub-Seite des Projekts liegt `S51-Designer.exe` zu
    - **Windows:** Doppelklick auf `designer/S51-Designer.pyw`
    - **Alle Systeme:** im Ordner `designer/` den Befehl `python -m s51design` ausführen
 
-Ohne Edge oder Chrome öffnet sich die Oberfläche im Standard-Browser. Öffnen, Speichern und das Schreiben auf die SD-Karte gehen dann über Herunterladen, die Dateien müssen von Hand an ihren Platz kopiert werden.
+Ohne Edge oder Chrome öffnet sich die Oberfläche im Standard-Browser. Öffnen und Speichern von Designs gehen dann über Herunterladen. Das Schreiben auf die SD-Karte funktioniert in jedem Browser.
 
 `python -m s51design --kein-fenster` startet nur den Server und zeigt die Adresse an, z. B. zum Öffnen in einem anderen Browser.
 
@@ -116,12 +116,12 @@ Die Bilder zeigen die Vorschau mit Demo-Werten. Neu erzeugen mit `python tools/m
 
 ## Auf den Tacho bringen
 
-**SD-Karte:** Knopf **Auf SD-Karte** (oder Datei → Auf SD-Karte schreiben), dann das Laufwerk der Karte wählen. Der Browser fragt einmal, ob der Designer auf diesen Ordner schreiben darf. Im folgenden Fenster:
+**SD-Karte:** Knopf **Auf SD-Karte** (oder Datei → Auf SD-Karte schreiben). Der Designer sucht eingesteckte Wechseldatenträger. Ist genau eine Karte da, geht es gleich weiter, sonst das Laufwerk wählen oder einen Ordner von Hand eintragen (z. B. `E:\`). Geschrieben wird vom Python-Teil des Designers, nicht vom Browser: Edge und Chrome lassen unter Windows keine Dateien mit der Endung `.cfg` anlegen. Im folgenden Fenster:
 - **Speichern als:** Dateiname des Designs, vorgeschlagen aus dem Layout-Namen (z. B. `klar.s51`). Andere Designs auf der Karte bleiben erhalten, so lassen sich mehrere nebeneinander ablegen.
 - **Standard-Design beim Start:** welches der Designs auf der Karte der Tacho beim Start zeigt. Wird in der `tacho.cfg` als `layout_datei` gespeichert. Ohne Haken bei „speichern als“ ändert der Dialog nur das Standard-Design.
 - Die übrigen Einstellungen in einer vorhandenen `tacho.cfg` bleiben erhalten. Nur wenn im Designer Einstellungen geladen oder bearbeitet wurden, werden diese geschrieben.
 
-Am Tacho lässt sich durch langes Drücken auf das Display jederzeit ein anderes Design wählen ([firmware/README.md](../firmware/README.md)). Ein im Designer neu festgelegtes Standard-Design gilt beim nächsten Start.
+Vor dem Herausziehen die Karte in Windows auswerfen. Am Tacho lässt sich im Menü (lange drücken, „Design“) jederzeit ein anderes Design wählen ([firmware/README.md](../firmware/README.md)). Ein im Designer neu festgelegtes Standard-Design gilt beim nächsten Start.
 
 **WLAN:** Knopf **Drahtlos**. Ablauf und Protokoll: [docs/uebertragung.md](../docs/uebertragung.md).
 
