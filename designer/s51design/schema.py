@@ -279,7 +279,7 @@ CONFIG = [
     # Anzeige
     CfgKey("anzeige", "layout_datei", "str", "design.s51",
            "Name der Layout-Datei im Ordner s51 auf der SD-Karte."),
-    CfgKey("anzeige", "startseite", "int", 0, "Nummer der Seite, die nach dem Start gezeigt wird.", 0, 15),
+    CfgKey("anzeige", "startseite", "int", 0, "Nummer (id) der Tagseite, die nach dem Start gezeigt wird.", 0, 15),
     CfgKey("anzeige", "startbild_dauer_s", "int", 2,
            "Wie lange die Startbild-Seite des Layouts beim Einschalten gezeigt wird, in Sekunden. 0 = aus.", 0, 10),
     CfgKey("anzeige", "startbild_text", "str", "S51",

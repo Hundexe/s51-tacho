@@ -20,8 +20,8 @@ Alles, was für den kompletten Nachbau gekauft werden muss, inklusive Stecker, K
 - [ ] **1× USB-C-Datenkabel** · Phase 1
   Zum Aufspielen der Software vom PC. Muss Daten übertragen können, reine Ladekabel gehen nicht.
   Suche: `USB C data cable 1m`
-- [ ] **1× microSD-Karte 8–32 GB** · Phase 8
-  Speichert das Fahrtenbuch (jede Fahrt als Datei, mit GPS-Strecke). Wird FAT32 formatiert.
+- [ ] **1× microSD-Karte 8–32 GB** · Phase 2
+  Bringt Layout (`design.s51`) und Einstellungen (`tacho.cfg`) aus dem Designer auf den Tacho, später auch das Fahrtenbuch (jede Fahrt als Datei, mit GPS-Strecke). Wird FAT32 formatiert.
   Suche: `micro SD card 16GB`
 
 ## 2. Kabel für die Stecker am Board

@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.6, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.7, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -11,6 +11,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.4: Günstiger: Kopftemperatur mit PT1000 am ADS1115 statt Thermoelement und MCP9600. Uhr-Modul entfällt, Uhrzeit kommt von GPS und iPhone. GPS-Modul mit u-blox M8 oder M10. Lagesensor MPU6050 statt LSM6DS3 (günstiger, die Adresse ist ohne Uhr-Modul frei).
 - 1.5: Anzeige frei gestaltbar mit dem PC-Programm S51 Designer. Layout-Datei (.s51) und Konfiguration (tacho.cfg) kommen per SD-Karte oder WLAN auf den Tacho.
 - 1.6: Layouts können Bilder enthalten (z. B. ein eigenes Logo) und eine Startbild-Seite, die beim Einschalten erscheint.
+- 1.7: Firmware zeigt Layouts aus dem Designer an. Schriften sind DejaVu (frei), in die Firmware eingebaut und kantengeglättet. microSD-Karte wird ab Phase 2 gebraucht.
 
 ---
 
@@ -186,6 +187,8 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 ## 6. Software
 
 - **Basis:** PlatformIO mit Arduino-Framework, LovyanGFX als Display-Treiber.
+- **Zeichnen:** Jede Seite wird komplett in ein Bild im PSRAM gezeichnet (480 × 320, 16 Bit) und dann ans Display geschickt. Der Code dafür (`firmware/lib/s51render/`) läuft auch am PC; `firmware/hosttest/compare.py` zeichnet alle Vorlagen damit und stellt sie neben die Vorschau des Designers ([Vergleichsbilder](bilder/firmware/)).
+- **Schriften:** DejaVu Sans, Sans Bold und Sans Mono Bold (freie Lizenz, `firmware/fonts/`), als kantengeglättete Graustufen-Zeichen in die Firmware eingebaut. Gleiche Schriften wie in den Vorschaubildern des Designers.
 - **Anzeige frei gestaltbar:** Die Fahrseiten entstehen am PC im [S51 Designer](../designer/README.md). Elemente wie Werte, Balken, Rundinstrumente, Kontrollleuchten und Bilder lassen sich frei platzieren. Der Tacho zeichnet die Seiten aus der Layout-Datei ([dateiformat-layout.md](dateiformat-layout.md)). Menüs (Einstellungen, PIN-Eingabe, Alarm, Übertragung) sind fest eingebaut.
 - **Einstellungen** stehen in der Textdatei `tacho.cfg` ([konfiguration.md](konfiguration.md)). PIN und NFC-Tags liegen nur im internen Speicher.
 - **Übertragung:** Layout und Einstellungen per SD-Karte (Ordner `s51`) oder per WLAN vom Designer ([uebertragung.md](uebertragung.md)).
@@ -215,7 +218,7 @@ Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste
 ## 8. Phasen
 
 1. **Display am Schreibtisch:** Demo-Fahransicht, Touch-Test (Code liegt in `firmware/`).
-2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Nachtmodus, Menüs, Sperrbildschirm mit PIN. Designer am PC, Dateiformate und Decoder sind schon fertig.
+2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Seitenwechsel, Nachtmodus (fertig ab Firmware 0.2.0, Werte noch Demo-Werte). Danach: Menüs, Sperrbildschirm mit PIN.
 3. **I²C-Module am Tisch:** Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
 4. **GPS und Drehzahl:** Drehzahl-Impulse simuliert mit einem zweiten Mikrocontroller.
 5. **Stromversorgung und Alarm:** Schutz-, Selbsthaltungs- und Wächterschaltung, Ruhestrom messen, Alarmton.
