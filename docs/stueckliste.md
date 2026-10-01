@@ -10,7 +10,7 @@ Modul-Bezeichnungen sind die üblichen Namen der fertigen Breakout-Platinen, wie
 
 | Menge | Teil | Zweck | Phase | Hinweis |
 |---|---|---|---|---|
-| 1 | WT32-SC01 Plus (ZX3D50CE08S-USRC-4832), Variante mit 16 MB Flash | Display und Rechner | 1 | Datenblatt in `datenblaetter/` |
+| 1 | WT32-SC01 Plus (ZX3D50CE08S-USRC-4832), Variante mit 16 MB Flash | Display und Rechner | 1 | Datenblatt: [datenblaetter.md](datenblaetter.md) |
 | 1 | USB-C-Kabel (Daten) | Flashen | 1 | reine Ladekabel funktionieren nicht |
 
 ## Sensoren und Module (I²C)

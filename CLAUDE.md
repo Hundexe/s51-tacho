@@ -10,6 +10,8 @@ Jemand ohne Vorwissen und ohne Zugang zu Chats, Notizen oder anderen Quellen mus
 - Software-Abhängigkeiten sind in `firmware/platformio.ini` auf exakte Versionen gepinnt.
 - CAD-Dateien liegen als Quelle (bearbeitbar) und als STL/STEP in `cad/`, mit Druckeinstellungen in einer README daneben.
 - Die Statustabelle in `README.md` sagt ehrlich, was getestet ist und was nicht. Ungetestetes wird als ungetestet markiert.
+- Keine fremden Datenblätter oder sonstigen Dateien ohne passende Lizenz ins Repo legen. Stattdessen verlinken (`docs/datenblaetter.md`) und das Wichtigste selbst zusammenfassen.
+- Neue Code-Dateien stehen unter MIT, alles andere unter CC BY-SA 4.0 (siehe `LICENSE.md`).
 - Keine persönlichen Bezüge in der Doku („du“, „deine Lampe“). Die Doku richtet sich an jeden, der nachbaut.
 
 ## Sprache und Stil
@@ -23,7 +25,7 @@ Jemand ohne Vorwissen und ohne Zugang zu Chats, Notizen oder anderen Quellen mus
 |---|---|
 | `docs/bauplan.md` | Was gebaut wird und warum, Ablauf, Phasen |
 | `docs/stueckliste.md` | Alle Teile mit Menge, Zweck, Phase |
-| `docs/datenblaetter/` | Datenblätter der Hauptteile |
+| `docs/datenblaetter.md` | Links zu den Datenblättern der Hauptteile |
 | `firmware/` | PlatformIO-Projekt |
 | `hardware/` | Schaltpläne und Verdrahtung |
 | `cad/` | Gehäuse und Halter |

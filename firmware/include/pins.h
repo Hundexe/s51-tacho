@@ -1,5 +1,5 @@
 // Pinbelegung S51-Tacho auf dem WT32-SC01 Plus (ZX3D50CE08S-USRC-4832)
-// Quelle Board-Pins: docs/datenblaetter/WT32-SC01-Plus_ZX3D50CE08S.pdf
+// Quelle Board-Pins: Datenblatt ZX3D50CE08S-USRC-4832, Links in docs/datenblaetter.md
 #pragma once
 #include <cstdint>
 

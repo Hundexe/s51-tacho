@@ -63,10 +63,14 @@ Die Fahransicht mit Demo-Werten: Geschwindigkeit steigt von 0 auf 60 km/h, Drehz
 
 | Ordner | Inhalt |
 |---|---|
-| `docs/` | Bauplan, Stückliste, Datenblätter |
+| `docs/` | Bauplan, Stückliste, Links zu Datenblättern |
 | `firmware/` | PlatformIO-Projekt für das SC01 Plus |
 | `hardware/` | Schaltpläne und Verdrahtung |
 | `cad/` | Lampenschale, Tasterpod, Halter |
+
+## Lizenz
+
+Firmware unter MIT, Doku, Schaltpläne und CAD unter CC BY-SA 4.0. Details in [LICENSE.md](LICENSE.md).
 
 ## Rechtliches
 
