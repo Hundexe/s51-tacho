@@ -98,7 +98,12 @@ Die Bilder zeigen die Vorschau mit Demo-Werten. Neu erzeugen mit `python tools/m
 
 ## Auf den Tacho bringen
 
-**SD-Karte:** Datei → Auf SD-Karte exportieren, Laufwerk der Karte wählen. Der Designer legt den Ordner `s51` an und schreibt `design.s51` und `tacho.cfg` hinein. Liegt dort schon eine `tacho.cfg`, fragt er, ob sie überschrieben werden soll.
+**SD-Karte:** Datei → Auf SD-Karte exportieren, Laufwerk der Karte wählen. Im folgenden Fenster:
+- **Speichern als:** Dateiname des Designs, vorgeschlagen aus dem Layout-Namen (z. B. `klar.s51`). Andere Designs auf der Karte bleiben erhalten, so lassen sich mehrere nebeneinander ablegen.
+- **Standard-Design beim Start:** welches der Designs auf der Karte der Tacho beim Start zeigt. Wird in der `tacho.cfg` als `layout_datei` gespeichert. Ohne Haken bei „speichern als“ ändert der Dialog nur das Standard-Design.
+- Die übrigen Einstellungen in einer vorhandenen `tacho.cfg` bleiben erhalten. Nur wenn im Designer Einstellungen geladen oder bearbeitet wurden, werden diese geschrieben.
+
+Am Tacho lässt sich durch langes Drücken auf das Display jederzeit ein anderes Design wählen ([firmware/README.md](../firmware/README.md)). Ein im Designer neu festgelegtes Standard-Design gilt beim nächsten Start.
 
 **WLAN:** Datei → Drahtlos übertragen. Ablauf und Protokoll: [docs/uebertragung.md](../docs/uebertragung.md).
 

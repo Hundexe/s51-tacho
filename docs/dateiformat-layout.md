@@ -310,10 +310,19 @@ Eine höhere Unterversion (z. B. 1.3) wird gelesen. Was der Decoder nicht kennt,
 
 | Ort | Pfad |
 |---|---|
-| SD-Karte | `/s51/design.s51`, der Name lässt sich in der Konfiguration ändern (`layout_datei`) |
-| Im Tacho | Kopie der letzten gültigen Datei im internen Flash |
+| SD-Karte | Beliebig viele Designs als `/s51/<name>.s51`. Welches beim Start gilt, steht in der Konfiguration (`layout_datei`, Standard `design.s51`) |
+| Im Tacho | Kopie des zuletzt benutzten Designs im internen Flash, dazu im NVS die Auswahl am Tacho |
 
-Ablauf beim Start: Gültige Datei auf der SD-Karte wird benutzt und intern gesichert. Fehlt sie oder ist sie beschädigt, nimmt der Tacho die interne Kopie. Gibt es auch die nicht, zeigt er das eingebaute Layout „Klar“.
+**Welches Design der Tacho zeigt**, in dieser Reihenfolge:
+1. Das am Tacho gewählte Design (lange auf das Display drücken öffnet die Auswahl). Die Wahl gilt, solange in der Konfiguration noch dasselbe Standard-Design steht wie beim Auswählen. Wird im Designer ein neues Standard-Design festgelegt, gilt dieses beim nächsten Start und die Auswahl am Tacho wird zurückgesetzt.
+2. Das Standard-Design aus der Konfiguration (`layout_datei`).
+3. Die erste `.s51`-Datei im Ordner `s51` (alphabetisch).
+4. Die interne Kopie.
+5. Das eingebaute Layout „Klar“.
+
+Beschädigte Dateien werden übersprungen. Jedes von der SD-Karte gelesene Design wird intern gesichert.
+
+**Design-Auswahl am Tacho:** zeigt alle `.s51`-Dateien im Ordner `s51` mit Name, Dateiname, Anzahl der Seiten und einer Vorschau der ersten Tagseite, dazu das eingebaute Layout „Klar“ (und ohne SD-Karte die interne Kopie). „Übernehmen“ wechselt sofort.
 
 ## 8. Beispiel
 

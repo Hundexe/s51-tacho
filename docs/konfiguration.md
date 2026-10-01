@@ -64,7 +64,7 @@ Fehlertoleranz: Ein unbekannter Schlüssel, ein unbekannter Abschnitt oder ein u
 
 | Schlüssel | Art | Standard | Bereich | Bedeutung |
 |---|---|---|---|---|
-| `layout_datei` | Text | design.s51 | | Name der Layout-Datei im Ordner `s51` |
+| `layout_datei` | Text | design.s51 | | Standard-Design: Name der Layout-Datei im Ordner `s51`. Der Designer setzt den Wert beim Export auf die SD-Karte. Am Tacho lässt sich durch langes Drücken ein anderes Design wählen, siehe [dateiformat-layout.md](dateiformat-layout.md), Abschnitt 7 |
 | `startseite` | Zahl | 0 | 0–15 | Nummer (`id`) der Tagseite, die nach dem Start gezeigt wird. Gibt es sie nicht, die erste Tagseite |
 | `startbild_dauer_s` | Zahl | 2 | 0–10 | Wie lange die Startbild-Seite des Layouts beim Einschalten zu sehen ist, in Sekunden. 0 = aus |
 | `startbild_text` | Text | S51 | | Text beim Einschalten, falls das Layout keine Startbild-Seite hat. Leer = nichts anzeigen |

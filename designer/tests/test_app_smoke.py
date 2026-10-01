@@ -363,20 +363,45 @@ class AppSmokeTest(unittest.TestCase):
         self.assertEqual(app.ed.layout.name, "Klar")
         sd = os.path.join(self.tmp.name, "sd")
         os.makedirs(sd)
-        self.fd.next_path = sd
-        app.export_sd()
+        card = os.path.join(sd, "s51")
         from s51design import config_format, layout_format
-        self.assertEqual(layout_format.load(os.path.join(sd, "s51", "design.s51")).name, "Klar")
-        values, warnings = config_format.load(os.path.join(sd, "s51", "tacho.cfg"))
+        # erster Export: Dateiname aus dem Layout-Namen, wird Standard
+        self.fd.next_path = sd
+        dlg = app.export_sd()
+        self.assertEqual(dlg.filename.get(), "klar.s51")
+        self.assertEqual(dlg.default.get(), "klar.s51")
+        self.assertTrue(dlg.do_export())
+        self.assertEqual(layout_format.load(os.path.join(card, "klar.s51")).name, "Klar")
+        values, warnings = config_format.load(os.path.join(card, "tacho.cfg"))
         self.assertEqual(warnings, [])
-        # zweiter Export: vorhandene cfg behalten (Antwort Nein)
-        with open(os.path.join(sd, "s51", "tacho.cfg"), "w", encoding="utf-8") as f:
-            f.write("[fahrzeug]\nmagnete = 4\n")
-        self.mb.answer = False
-        app.export_sd()
-        self.mb.answer = True
-        with open(os.path.join(sd, "s51", "tacho.cfg"), encoding="utf-8") as f:
-            self.assertIn("magnete = 4", f.read())
+        self.assertEqual(values[("anzeige", "layout_datei")], "klar.s51")
+        # Einstellungen auf der Karte bleiben erhalten, zweites Design dazu, Standard bleibt
+        with open(os.path.join(card, "tacho.cfg"), "w", encoding="utf-8") as f:
+            f.write("[fahrzeug]\nmagnete = 4\n[anzeige]\nlayout_datei = klar.s51\n")
+        app.new("Rennsport")
+        dlg = app.export_sd()
+        self.assertEqual(dlg.filename.get(), "rennsport.s51")
+        self.assertEqual(dlg.default.get(), "klar.s51")
+        self.assertEqual(dlg.options(), ["klar.s51", "rennsport.s51"])
+        self.assertTrue(dlg.do_export())
+        values, _ = config_format.load(os.path.join(card, "tacho.cfg"))
+        self.assertEqual(values[("fahrzeug", "magnete")], 4)
+        self.assertEqual(values[("anzeige", "layout_datei")], "klar.s51")
+        # nur den Standard ändern, ohne Design zu schreiben
+        dlg = app.export_sd()
+        dlg.write_layout.set(False)
+        dlg.refresh()
+        self.assertEqual(dlg.options(), ["klar.s51", "rennsport.s51"])
+        dlg.default.set("rennsport.s51")
+        self.assertTrue(dlg.do_export())
+        values, _ = config_format.load(os.path.join(card, "tacho.cfg"))
+        self.assertEqual(values[("anzeige", "layout_datei")], "rennsport.s51")
+        self.assertEqual(sorted(os.listdir(card)), ["klar.s51", "rennsport.s51", "tacho.cfg"])
+        # ungültiger Dateiname
+        dlg = app.export_sd()
+        dlg.filename.set("mein design!")
+        self.assertFalse(dlg.do_export())
+        self.assertIn("Dateiname", dlg.msg.get())
 
     def test_config_dialog(self):
         dlg = self.app_mod.ConfigDialog(self.app)

@@ -6,15 +6,19 @@ Aktueller Stand: **Phase 2**, der Tacho zeigt Layouts aus dem [S51 Designer](../
 
 ## Bedienung
 
-**Layout und Einstellungen auf die SD-Karte bringen:** microSD-Karte (FAT32, bis 32 GB) am PC einlegen, im Designer *Datei → Auf SD-Karte exportieren* wählen. Das legt den Ordner `s51` mit `design.s51` und `tacho.cfg` an. Karte in den Slot des Displays stecken und den Tacho neu starten.
+**Designs auf die SD-Karte bringen:** microSD-Karte (FAT32, bis 32 GB) am PC einlegen, im Designer *Datei → Auf SD-Karte exportieren* wählen. Der Designer schreibt das Design als `<name>.s51` in den Ordner `s51` und legt in der `tacho.cfg` fest, welches Design beim Start gilt (Standard-Design). So lassen sich beliebig viele Designs auf die Karte legen. Karte in den Slot des Displays stecken und den Tacho neu starten.
 
 **Beim Start**
 1. `s51/tacho.cfg` wird gelesen. Fehlt sie, gelten die Standardwerte ([docs/konfiguration.md](../docs/konfiguration.md)).
-2. Das Layout `s51/<layout_datei>` wird gelesen und im internen Speicher gesichert. Fehlt es oder ist es beschädigt, nimmt der Tacho die interne Kopie, sonst das eingebaute Layout „Klar“.
+2. Das Design wird gewählt: am Tacho ausgewähltes Design, sonst das Standard-Design aus `layout_datei`, sonst die erste `.s51`-Datei, sonst die interne Kopie, sonst das eingebaute Layout „Klar“. Genaue Regeln: [docs/dateiformat-layout.md](../docs/dateiformat-layout.md), Abschnitt 7.
 3. Hat das Layout eine Startbild-Seite, erscheint sie für `startbild_dauer_s` Sekunden, sonst `startbild_text`.
 4. Danach die Tagseite aus `startseite`. Unten erscheinen einige Sekunden lang Hinweise, z. B. „Keine SD-Karte“.
 
 **Seite wechseln:** nach links oder rechts wischen oder auf das rechte bzw. linke Drittel tippen. Unten zeigen Punkte kurz, auf welcher Seite man ist.
+
+**Design wählen:** etwa eine Sekunde lang auf das Display drücken. Links stehen alle Designs von der SD-Karte und das eingebaute „Klar“, rechts eine Vorschau des angetippten Designs. „Übernehmen“ wechselt sofort, der Tacho merkt sich die Wahl auch nach dem Ausschalten. Mehr Designs als auf den Bildschirm passen: in der Liste nach oben oder unten wischen. Das × oben rechts schließt die Auswahl.
+
+![Design-Auswahl](../docs/bilder/firmware/auswahl.png)
 
 **Nachtmodus:** `nachtmodus = an` in der `tacho.cfg` zeigt die Nachtversionen der Seiten und nutzt `helligkeit_nacht`. `auto` verhält sich bis Phase 3 wie `aus`.
 
@@ -69,11 +73,12 @@ Alle Versionen sind in `platformio.ini` fest gepinnt. GitHub baut die Firmware b
 
 | Pfad | Inhalt |
 |---|---|
-| `src/main.cpp` | Ablauf: SD-Karte, Konfiguration, Layout laden, Startbild, Seitenwechsel |
+| `src/main.cpp` | Ablauf: SD-Karte, Konfiguration, Design wählen und laden, Startbild, Seitenwechsel, Bedienung |
 | `include/pins.h` | Alle Pins |
 | `include/lgfx_sc01plus.h` | Display- und Touch-Einstellungen für LovyanGFX |
 | `lib/s51layout/` | Decoder für Layout (`.s51`) und Konfiguration (`tacho.cfg`) |
 | `lib/s51render/` | Zeichnet Seiten: Regeln für Werte und Warnfarben (`s51_values`), Schrift (`s51_text`), Elemente (`s51_render`) |
+| `lib/s51ui/` | Fest eingebaute Bildschirme, bisher die Design-Auswahl (`s51_picker`) |
 | `data/s51fonts.bin` | Schriften, erzeugt von `tools/gen_fonts.py` aus `fonts/` |
 | `data/klar.s51` | Eingebautes Layout, geschrieben von `designer/tools/make_examples.py` |
 | `fonts/` | DejaVu-Schriften mit Lizenz |
@@ -85,6 +90,7 @@ Die Bibliotheken in `lib/` laufen auch am PC:
 
 - `designer/tests/test_cpp_decoder.py` vergleicht den Decoder mit dem Python-Decoder des Designers.
 - `designer/tests/test_firmware_render.py` vergleicht Werteformat, Warnfarben, Balken und Kontrollleuchten mit den Regeln des Designers und prüft, dass die Schriften alle Zeichen der Vorlagen enthalten.
+- `hosttest/ui.sh <Zielordner>` zeichnet die Design-Auswahl mit allen Vorlagen als Designs.
 - `hosttest/compare.py` zeichnet alle Vorlagen mit dem echten Renderer (LovyanGFX am PC, ohne Display) und stellt sie neben die Vorschau des Designers. Ergebnis: [docs/bilder/firmware/](../docs/bilder/firmware/). Braucht g++, git und Pillow:
 
 ```

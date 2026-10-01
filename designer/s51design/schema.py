@@ -278,7 +278,8 @@ CONFIG = [
            "Ab dieser Strecke seit dem letzten Tanken erscheint die Reserve-Warnung. 0 = aus.", 0, 1000),
     # Anzeige
     CfgKey("anzeige", "layout_datei", "str", "design.s51",
-           "Name der Layout-Datei im Ordner s51 auf der SD-Karte."),
+           "Standard-Design: Name der Layout-Datei im Ordner s51 auf der SD-Karte. "
+           "Am Tacho lässt sich durch langes Drücken ein anderes wählen."),
     CfgKey("anzeige", "startseite", "int", 0, "Nummer (id) der Tagseite, die nach dem Start gezeigt wird.", 0, 15),
     CfgKey("anzeige", "startbild_dauer_s", "int", 2,
            "Wie lange die Startbild-Seite des Layouts beim Einschalten gezeigt wird, in Sekunden. 0 = aus.", 0, 10),

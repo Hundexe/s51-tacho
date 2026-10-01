@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.7, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.8, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -12,6 +12,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.5: Anzeige frei gestaltbar mit dem PC-Programm S51 Designer. Layout-Datei (.s51) und Konfiguration (tacho.cfg) kommen per SD-Karte oder WLAN auf den Tacho.
 - 1.6: Layouts können Bilder enthalten (z. B. ein eigenes Logo) und eine Startbild-Seite, die beim Einschalten erscheint.
 - 1.7: Firmware zeigt Layouts aus dem Designer an. Schriften sind DejaVu (frei), in die Firmware eingebaut und kantengeglättet. microSD-Karte wird ab Phase 2 gebraucht.
+- 1.8: Mehrere Designs auf der SD-Karte. Auswahl am Tacho durch langes Drücken, Standard-Design wird im Designer festgelegt.
 
 ---
 
@@ -192,6 +193,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - **Anzeige frei gestaltbar:** Die Fahrseiten entstehen am PC im [S51 Designer](../designer/README.md). Elemente wie Werte, Balken, Rundinstrumente, Kontrollleuchten und Bilder lassen sich frei platzieren. Der Tacho zeichnet die Seiten aus der Layout-Datei ([dateiformat-layout.md](dateiformat-layout.md)). Menüs (Einstellungen, PIN-Eingabe, Alarm, Übertragung) sind fest eingebaut.
 - **Einstellungen** stehen in der Textdatei `tacho.cfg` ([konfiguration.md](konfiguration.md)). PIN und NFC-Tags liegen nur im internen Speicher.
 - **Übertragung:** Layout und Einstellungen per SD-Karte (Ordner `s51`) oder per WLAN vom Designer ([uebertragung.md](uebertragung.md)).
+- **Mehrere Designs:** Auf der SD-Karte können beliebig viele Designs liegen. Das Standard-Design wird im Designer beim Export festgelegt, am Tacho öffnet langes Drücken eine Auswahl mit Vorschau. Die Wahl bleibt gespeichert.
 - **Startmodus:** Zuerst wird geprüft, warum der Tacho an ist. Zündung → Entsperren oder Fahransicht. Keine Zündung → Alarmprüfung ohne Display.
 - **Tasks:** Sensoren (Interrupts, GPS, I²C mit 20 Hz), Oberfläche (30 fps), Speicher und Fahrtenbuch, Bluetooth.
 - **Speicher:** 16 MB Flash mit zwei App-Bereichen für Updates per WLAN, dazu Dateisystem für Einstellungen.
@@ -218,7 +220,7 @@ Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste
 ## 8. Phasen
 
 1. **Display am Schreibtisch:** Demo-Fahransicht, Touch-Test (Code liegt in `firmware/`).
-2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Seitenwechsel, Nachtmodus (fertig ab Firmware 0.2.0, Werte noch Demo-Werte). Danach: Menüs, Sperrbildschirm mit PIN.
+2. **Oberfläche:** Layout-Datei von SD-Karte laden und zeichnen, Startbild, Seitenwechsel, Nachtmodus (fertig ab Firmware 0.2.0), Design-Auswahl am Tacho (ab 0.3.0). Werte noch Demo-Werte. Danach: Menüs, Sperrbildschirm mit PIN.
 3. **I²C-Module am Tisch:** Lage, Außentemperatur, Licht, Spannung, Kopftemperatur, Eingänge.
 4. **GPS und Drehzahl:** Drehzahl-Impulse simuliert mit einem zweiten Mikrocontroller.
 5. **Stromversorgung und Alarm:** Schutz-, Selbsthaltungs- und Wächterschaltung, Ruhestrom messen, Alarmton.

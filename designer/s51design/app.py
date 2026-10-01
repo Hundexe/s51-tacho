@@ -12,7 +12,7 @@ import threading
 import tkinter as tk
 from tkinter import colorchooser, filedialog, messagebox, ttk
 
-from . import __version__, config_format, icons, layout_format, presets, render, theme, transfer
+from . import __version__, config_format, icons, layout_format, presets, render, sdcard, theme, transfer
 from . import images as I
 from . import schema as S
 from . import values as V
@@ -1128,41 +1128,19 @@ class App:
         save_settings(self.settings)
 
     def export_sd(self):
+        """SD-Karte wählen und den Export-Dialog öffnen (Dateiname, Standard-Design)."""
         try:
             data = self.ed.encoded()
         except layout_format.LayoutError as e:
             messagebox.showerror(APP_NAME, f"Layout ist nicht gültig:\n{e}")
-            return
+            return None
         root_dir = filedialog.askdirectory(parent=self.root, title="SD-Karte (Laufwerk) auswählen",
                                            initialdir=self.settings.get("last_sd"))
         if not root_dir:
-            return
-        target = root_dir if os.path.basename(os.path.normpath(root_dir)).lower() == "s51" else os.path.join(root_dir, "s51")
-        layout_name = self.cfg[("anzeige", "layout_datei")] or "design.s51"
-        cfg_path = os.path.join(target, "tacho.cfg")
-        write_cfg = True
-        if os.path.exists(cfg_path) and not self.cfg_loaded:
-            ans = messagebox.askyesnocancel(
-                APP_NAME, "Auf der Karte liegt schon eine tacho.cfg.\n\n"
-                          "Ja: mit den Einstellungen aus dem Designer überschreiben\n"
-                          "Nein: vorhandene Einstellungen auf der Karte behalten")
-            if ans is None:
-                return
-            write_cfg = ans
-        try:
-            os.makedirs(target, exist_ok=True)
-            with open(os.path.join(target, layout_name), "wb") as f:
-                f.write(data)
-            if write_cfg:
-                config_format.save(self.cfg, cfg_path)
-        except OSError as e:
-            messagebox.showerror(APP_NAME, f"Schreiben auf die Karte fehlgeschlagen:\n{e}")
-            return
+            return None
         self.settings["last_sd"] = root_dir
         save_settings(self.settings)
-        done = f"{layout_name} ({human_size(len(data))})" + (" und tacho.cfg" if write_cfg else "")
-        messagebox.showinfo(APP_NAME, f"Auf die Karte geschrieben: {done}\nOrdner: {target}\n\n"
-                                      "Karte sicher auswerfen, in den Tacho stecken und den Tacho neu starten.")
+        return ExportDialog(self, sdcard.target_dir(root_dir), data)
 
     def quit(self):
         if self._confirm_discard():
@@ -1205,6 +1183,121 @@ class App:
 
     def open_wireless(self):
         return WirelessDialog(self)
+
+
+class ExportDialog:
+    """Design auf die SD-Karte schreiben und festlegen, welches Design der Tacho beim Start zeigt."""
+
+    def __init__(self, app, directory, data):
+        self.app, self.directory, self.data = app, directory, data
+        self.existing = sdcard.list_designs(directory)
+        card_cfg = sdcard.card_config(directory)
+        current_default = (card_cfg or app.cfg)[("anzeige", "layout_datei")]
+        self.filename = tk.StringVar(value=sdcard.file_name_for(app.ed.layout.name))
+        self.write_layout = tk.BooleanVar(value=True)
+        self.default = tk.StringVar(value=current_default if current_default in self.existing
+                                    else self.filename.get())
+        self.msg = tk.StringVar(value="")
+
+        self.top = tk.Toplevel(app.root)
+        self.top.title("Auf SD-Karte exportieren")
+        self.top.transient(app.root)
+        self.top.configure(background=C["bg"])
+        f = ttk.Frame(self.top, padding=20)
+        f.pack(fill="both", expand=True)
+        f.columnconfigure(1, weight=1)
+        ttk.Label(f, text="Auf SD-Karte exportieren", style="Title.TLabel").grid(row=0, column=0, columnspan=2,
+                                                                                 sticky="w")
+        ttk.Label(f, text=f"Ordner: {directory}", style="Muted.TLabel").grid(row=1, column=0, columnspan=2,
+                                                                            sticky="w", pady=(2, 12))
+        ttk.Checkbutton(f, text=f"Design „{app.ed.layout.name}“ speichern als", variable=self.write_layout,
+                        command=self.refresh).grid(row=2, column=0, sticky="w")
+        e = ttk.Entry(f, textvariable=self.filename, width=28)
+        e.grid(row=2, column=1, sticky="w", padx=(8, 0))
+        e.bind("<KeyRelease>", lambda ev: self.refresh())
+        self.hint = ttk.Label(f, text="", style="Muted.TLabel")
+        self.hint.grid(row=3, column=1, sticky="w", padx=(8, 0))
+
+        self.heading = ttk.Label(f, text="STANDARD-DESIGN BEIM START", style="Head.TLabel")
+        self.heading.grid(row=4, column=0, columnspan=2, sticky="w", pady=(16, 4))
+        self.choices = ttk.Frame(f)
+        self.choices.grid(row=5, column=0, columnspan=2, sticky="w")
+        ttk.Label(f, text=("Am Tacho lässt sich durch langes Drücken auf das Display jederzeit ein anderes Design "
+                           "wählen. Ein hier neu festgelegter Standard gilt beim nächsten Start, bis am Tacho "
+                           "wieder etwas anderes gewählt wird."),
+                  style="Muted.TLabel", wraplength=460, justify="left").grid(row=6, column=0, columnspan=2,
+                                                                            sticky="w", pady=(10, 0))
+        btns = ttk.Frame(f)
+        btns.grid(row=7, column=0, columnspan=2, sticky="e", pady=(18, 0))
+        ttk.Button(btns, text="Abbrechen", command=self.top.destroy).pack(side="right")
+        ttk.Button(btns, text="Auf die Karte schreiben", style="Accent.TButton",
+                   command=self.do_export).pack(side="right", padx=6)
+        ttk.Label(f, textvariable=self.msg, foreground=C["danger"]).grid(row=8, column=0, columnspan=2, sticky="w")
+        self.refresh()
+
+    def options(self):
+        """Dateien, die als Standard wählbar sind: vorhandene und, falls gespeichert wird, die neue."""
+        names = list(self.existing)
+        if self.write_layout.get():
+            try:
+                new = sdcard.clean_file_name(self.filename.get())
+            except ValueError:
+                new = None
+            if new and new not in names:
+                names.append(new)
+        return sorted(names)
+
+    def refresh(self):
+        try:
+            name = sdcard.clean_file_name(self.filename.get())
+            self.hint.configure(text="wird überschrieben" if name in self.existing else "neue Datei")
+        except ValueError as e:
+            self.hint.configure(text=str(e))
+        for child in self.choices.winfo_children():
+            child.destroy()
+        opts = self.options()
+        if self.default.get() not in opts and opts:
+            self.default.set(opts[0])
+        for n in opts:
+            ttk.Radiobutton(self.choices, text=n, value=n, variable=self.default).pack(anchor="w", pady=1)
+        if not opts:
+            ttk.Label(self.choices, text="Noch keine Designs auf der Karte.", style="Muted.TLabel").pack(anchor="w")
+
+    def do_export(self):
+        app = self.app
+        file_name = self.filename.get()
+        default = self.default.get()
+        try:
+            if self.write_layout.get():
+                file_name = sdcard.clean_file_name(file_name)
+            else:
+                file_name = None
+            if not default:
+                raise ValueError("Bitte ein Standard-Design wählen")
+            if file_name is None:
+                # nur das Standard-Design ändern
+                values = dict(app.cfg) if app.cfg_loaded else (sdcard.card_config(self.directory)
+                                                               or config_format.defaults())
+                values[("anzeige", "layout_datei")] = sdcard.clean_file_name(default)
+                os.makedirs(self.directory, exist_ok=True)
+                config_format.save(values, os.path.join(self.directory, sdcard.CFG_NAME))
+            else:
+                values = sdcard.export(self.directory, self.data, file_name, default,
+                                       app.cfg if app.cfg_loaded else None)
+        except ValueError as e:
+            self.msg.set(str(e))
+            return False
+        except OSError as e:
+            self.msg.set(f"Schreiben auf die Karte fehlgeschlagen: {e}")
+            return False
+        if app.cfg_loaded:
+            app.cfg[("anzeige", "layout_datei")] = values[("anzeige", "layout_datei")]
+        written = f"{file_name} ({human_size(len(self.data))}) und tacho.cfg" if file_name else "tacho.cfg"
+        self.top.destroy()
+        messagebox.showinfo(APP_NAME, f"Auf die Karte geschrieben: {written}\nStandard-Design: {default}\n"
+                                      f"Ordner: {self.directory}\n\n"
+                                      "Karte sicher auswerfen, in den Tacho stecken und den Tacho neu starten.")
+        return True
 
 
 class ConfigDialog:
