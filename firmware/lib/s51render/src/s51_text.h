@@ -62,6 +62,10 @@ class FontSet {
   std::vector<Face> faces_;
 };
 
+// Kantengeglätteter Kreisbogen (Ring zwischen r0 und r1) von Winkel a0 bis a1 in Grad.
+// 0° = rechts, im Uhrzeigersinn. a1 - a0 bis 360°. Enden gerade abgeschnitten.
+void fillArcAA(Canvas565& cv, float cx, float cy, float r0, float r1, float a0, float a1, Color color);
+
 uint32_t nextCodepoint(const std::string& s, size_t& i);
 bool isDigitText(const std::string& s);
 

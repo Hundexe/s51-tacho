@@ -57,7 +57,7 @@ def py_lines(layout):
     out = []
     for s in layout.screens:
         for i, w in enumerate(s.widgets):
-            text, col, frac, on = "-", "-", 0.0, 0
+            text, col, frac, on = "-", "-", (0.0, 0.0), 0
             src = S.SOURCE_BY_KEY.get(w.get("source")) if w.type in ("value", "bar", "gauge", "indicator") else None
             raw = vals.get(src.key) if src else None
             num = raw if src is not None and src.kind == "number" else None
@@ -65,11 +65,18 @@ def py_lines(layout):
                 text = V.display_text(w, vals)
                 col = V.threshold_color(w, num, w.get("color")) if w.type == "value" else w.get("color")
             elif w.type in ("bar", "gauge"):
-                frac = V.fraction(w, num)
-                col = V.threshold_color(w, num, w.get("color"))
+                frac = V.fill_range(w, num)
+                col = V.threshold_color(w, V.fill_value(w, num), w.get("color"))
+                if w.type == "bar" and w.get("segments") > 0:
+                    marks = ""
+                    for k in range(w.get("segments")):
+                        lit, sv = V.segment_lit(w, num, k, w.get("segments"))
+                        marks += (("n" if V.threshold_color(w, sv, w.get("color")) == w.get("color") else "w")
+                                  if lit else ".")
+                    text = "-" + marks
             elif w.type == "indicator":
                 on = 1 if V.indicator_on(w, vals, t=0.1) else 0
-            out.append(f"{s.id}|{i}|{text}|{col.upper() if col != '-' else col}|{frac:.3f}|{on}")
+            out.append(f"{s.id}|{i}|{text}|{col.upper() if col != '-' else col}|{frac[0]:.3f}-{frac[1]:.3f}|{on}")
     return out
 
 
@@ -107,6 +114,14 @@ class ValuesMatchDesigner(unittest.TestCase):
             w = layout_format.Widget.new("value")
             w.props.update(source=src, decimals=dec, unit=unit, warn_above=30.0, crit_above=60.0)
             layout.screens[0].widgets.append(w)
+        for src, lo, hi, segs in (("lean", -45.0, 45.0, 0), ("lean", -45.0, 45.0, 9), ("outside_temp", -10.0, 40.0, 10),
+                                  ("speed", 10.0, 80.0, 7)):
+            for t in ("bar", "gauge"):
+                w = layout_format.Widget.new(t)
+                w.props.update(source=src, min=lo, max=hi, from_zero=True, warn_above=10.0, crit_above=20.0)
+                if t == "bar":
+                    w.props["segments"] = segs
+                layout.screens[0].widgets.append(w)
         for fmt in ("HH:MM:SS", "MM", "Uhr HH"):
             w = layout_format.Widget.new("value")
             w.props.update(source="time", format=fmt)

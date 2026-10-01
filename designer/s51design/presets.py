@@ -179,8 +179,8 @@ def rennsport():
     ])
     lage = Screen(1, "Schräglage", bg="#000000", widgets=[
         _label(16, 12, 200, "Schräglage", 22, TEXT, h=30),
-        _w("gauge", 90, 20, 300, 300, source="lean", min=-45.0, max=45.0, start_angle=180, end_angle=360,
-           thickness=26, color=GREEN, bg_color=seg_bg, warn_above=30.0, crit_above=40.0),
+        _w("gauge", 90, 20, 300, 300, source="lean", min=-45.0, max=45.0, from_zero=True, start_angle=180,
+           end_angle=360, thickness=26, color=GREEN, bg_color=seg_bg, warn_above=30.0, crit_above=40.0),
         _label(62, 178, 56, "L 45°", 12, DIM, "center"),
         _label(362, 178, 56, "45° R", 12, DIM, "center"),
         _label(220, 2, 40, "0°", 12, DIM, "center"),
@@ -311,7 +311,7 @@ def alle_elemente():
            bg_color=LINE, crit_above=65.0),
         _w("value", 32, 96, 100, 36, source="speed", font="sans_bold", size=26),
         _label(12, 188, 140, "135°–405°", 12, DIM, "center"),
-        _w("gauge", 170, 44, 140, 140, source="lean", min=-45.0, max=45.0, start_angle=180,
+        _w("gauge", 170, 44, 140, 140, source="lean", min=-45.0, max=45.0, from_zero=True, start_angle=180,
            end_angle=360, thickness=20, color=BLUE, bg_color=LINE),
         _w("value", 190, 90, 100, 30, source="lean", font="sans_bold", size=22, unit="°"),
         _label(170, 188, 140, "180°–360°, Halbkreis", 12, DIM, "center"),

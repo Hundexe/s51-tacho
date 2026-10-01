@@ -16,7 +16,7 @@ struct Color {
 
 constexpr char kMagic[4] = {'S', '5', '1', 'L'};
 constexpr uint8_t kVersionMajor = 1;
-constexpr uint8_t kVersionMinor = 1;
+constexpr uint8_t kVersionMinor = 2;
 constexpr uint16_t kHeaderSize = 16;
 constexpr uint16_t kDisplayWidth = 480;
 constexpr uint16_t kDisplayHeight = 320;
@@ -199,6 +199,7 @@ enum class Prop : uint8_t {
   BorderColor = 27,  // Rahmenfarbe (color)
   BorderWidth = 28,  // Rahmenbreite (px) (u8)
   Image = 29,  // Bild (u8)
+  FromZero = 30,  // Ab 0 füllen (bool)
 };
 
 enum class CfgType : uint8_t { Int, Float, Bool, Str, Enum };
@@ -285,6 +286,7 @@ struct CfgDef {
   Color borderColor; \
   uint8_t borderWidth; \
   uint8_t image; \
+  bool fromZero; \
   uint32_t propsSet[2];
 
 constexpr CfgDef kConfigDefs[] = {

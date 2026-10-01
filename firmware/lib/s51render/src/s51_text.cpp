@@ -218,4 +218,64 @@ void FontSet::draw(Canvas565& cv, const Choice& c, const std::string& s, float x
   }
 }
 
+// ---------------------------------------------------------------------------
+// Kreisbogen
+// ---------------------------------------------------------------------------
+
+void fillArcAA(Canvas565& cv, float cx, float cy, float r0, float r1, float a0, float a1, Color color) {
+  if (!cv.buf || r1 <= 0 || a1 <= a0) return;
+  const uint16_t col = color.to565();
+  const float span = std::min(360.0f, a1 - a0);
+  const bool full = span >= 359.999f, wide = span > 180.0f;
+  // Richtungen der beiden Enden. Kreuzprodukt mit dem Punkt = vorzeichenbehafteter
+  // Abstand zur Linie des Endes (Bildschirm: y nach unten, Winkel im Uhrzeigersinn)
+  const float sx = std::cos(a0 * 0.0174532925f), sy = std::sin(a0 * 0.0174532925f);
+  const float ex = std::cos(a1 * 0.0174532925f), ey = std::sin(a1 * 0.0174532925f);
+  r0 = std::max(0.0f, r0);
+  const float outer = r1 + 1, inner2 = std::max(0.0f, r0 - 1) * std::max(0.0f, r0 - 1);
+  int y0 = std::max(cv.clipY, static_cast<int>(std::floor(cy - outer)));
+  int y1 = std::min(cv.clipY + cv.clipH, static_cast<int>(std::ceil(cy + outer)) + 1);
+  for (int py = y0; py < y1; py++) {
+    const float dy = py + 0.5f - cy;
+    const float dy2 = dy * dy;
+    if (dy2 > outer * outer) continue;
+    const float xo = std::sqrt(outer * outer - dy2);
+    const float xi = dy2 < inner2 ? std::sqrt(inner2 - dy2) : -1.0f;   // innere Lücke der Zeile
+    uint16_t* row = cv.buf + size_t(py) * cv.width;
+    // zwei Abschnitte je Zeile (links und rechts der inneren Lücke)
+    for (int side = 0; side < 2; side++) {
+      float fx0, fx1;
+      if (xi < 0) {
+        if (side == 1) break;
+        fx0 = cx - xo;
+        fx1 = cx + xo;
+      } else if (side == 0) {
+        fx0 = cx - xo;
+        fx1 = cx - xi;
+      } else {
+        fx0 = cx + xi;
+        fx1 = cx + xo;
+      }
+      int px0 = std::max(cv.clipX, static_cast<int>(std::floor(fx0)));
+      int px1 = std::min(cv.clipX + cv.clipW, static_cast<int>(std::ceil(fx1)) + 1);
+      for (int px = px0; px < px1; px++) {
+        const float dx = px + 0.5f - cx;
+        const float d = std::sqrt(dx * dx + dy2);
+        float cov = std::min(d - r0, r1 - d) + 0.5f;     // Deckung am inneren und äußeren Rand
+        if (cov <= 0) continue;
+        if (cov > 1) cov = 1;
+        if (!full) {
+          const float inStart = sx * dy - sy * dx;     // > 0: hinter dem Anfang
+          const float inEnd = ey * dx - ex * dy;       // > 0: vor dem Ende
+          // bis 180° Schnitt der beiden Halbebenen, darüber Vereinigung
+          const float edge = (wide ? std::max(inStart, inEnd) : std::min(inStart, inEnd)) + 0.5f;
+          if (edge <= 0) continue;
+          if (edge < 1) cov *= edge;
+        }
+        blend(row[px], col, static_cast<uint8_t>(cov * 255.0f + 0.5f));
+      }
+    }
+  }
+}
+
 }  // namespace s51

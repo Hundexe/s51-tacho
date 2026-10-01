@@ -47,32 +47,31 @@ def draw_text(c, w, z, text, color, wrap=False):
 
 
 def draw_bar(c, w, z, value):
-    f = V.fraction(w, value)
+    a, b = V.fill_range(w, value)
     bg, normal = w.get("bg_color"), w.get("color")
     vertical = w.get("orientation") == "vertical"
     n = w.get("segments")
-    lo, hi = w.get("min"), w.get("max")
     if n <= 0:
         rounded_rect(c, w.x, w.y, w.x + w.w, w.y + w.h, w.get("radius"), z, fill=bg, outline="")
-        col = V.threshold_color(w, value, normal)
-        if f > 0:
+        col = V.threshold_color(w, V.fill_value(w, value), normal)
+        if b > a:
             if vertical:
-                rounded_rect(c, w.x, w.y + w.h * (1 - f), w.x + w.w, w.y + w.h, w.get("radius"), z, fill=col, outline="")
+                rounded_rect(c, w.x, w.y + w.h * (1 - b), w.x + w.w, w.y + w.h * (1 - a), w.get("radius"), z,
+                             fill=col, outline="")
             else:
-                rounded_rect(c, w.x, w.y, w.x + w.w * f, w.y + w.h, w.get("radius"), z, fill=col, outline="")
+                rounded_rect(c, w.x + w.w * a, w.y, w.x + w.w * b, w.y + w.h, w.get("radius"), z, fill=col, outline="")
         return
     gap = 2
     length = w.h if vertical else w.w
     seg = (length - gap * (n - 1)) / n
-    lit = int(round(f * n))
     for i in range(n):
-        seg_value = lo + (hi - lo) * (i + 1) / n
-        col = V.threshold_color(w, seg_value, normal) if i < lit else bg
-        a = i * (seg + gap)
+        lit, seg_value = V.segment_lit(w, value, i, n)
+        col = V.threshold_color(w, seg_value, normal) if lit else bg
+        p = i * (seg + gap)
         if vertical:
-            _r(c, w.x, w.y + w.h - a - seg, w.x + w.w, w.y + w.h - a, z, fill=col, outline="")
+            _r(c, w.x, w.y + w.h - p - seg, w.x + w.w, w.y + w.h - p, z, fill=col, outline="")
         else:
-            _r(c, w.x + a, w.y, w.x + a + seg, w.y + w.h, z, fill=col, outline="")
+            _r(c, w.x + p, w.y, w.x + p + seg, w.y + w.h, z, fill=col, outline="")
 
 
 def draw_gauge(c, w, z, value):
@@ -85,10 +84,10 @@ def draw_gauge(c, w, z, value):
     # Winkel im Format: 0° = rechts, im Uhrzeigersinn. Tk: gegen den Uhrzeigersinn.
     c.create_arc(*box, start=-a0, extent=-(a1 - a0), style="arc", width=th * z,
                  outline=w.get("bg_color"), tags=TAG)
-    f = V.fraction(w, value)
-    if f > 0:
-        c.create_arc(*box, start=-a0, extent=-(a1 - a0) * f, style="arc", width=th * z,
-                     outline=V.threshold_color(w, value, w.get("color")), tags=TAG)
+    fa, fb = V.fill_range(w, value)
+    if fb > fa:
+        c.create_arc(*box, start=-(a0 + (a1 - a0) * fa), extent=-(a1 - a0) * (fb - fa), style="arc", width=th * z,
+                     outline=V.threshold_color(w, V.fill_value(w, value), w.get("color")), tags=TAG)
 
 
 def draw_icon(c, w, z, color):

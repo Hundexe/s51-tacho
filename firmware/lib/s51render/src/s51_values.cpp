@@ -1,5 +1,6 @@
 #include "s51_values.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -100,6 +101,40 @@ float fraction(const WidgetData& w, bool hasValue, float value) {
   if (!hasValue || w.max == w.min) return 0.0f;
   float f = (value - w.min) / (w.max - w.min);
   return f < 0 ? 0.0f : (f > 1 ? 1.0f : f);
+}
+
+void fillRange(const WidgetData& w, bool hasValue, float value, float& a, float& b) {
+  float f = fraction(w, hasValue, value);
+  if (!w.fromZero) {
+    a = 0;
+    b = f;
+    return;
+  }
+  if (!hasValue) {
+    a = b = 0;
+    return;
+  }
+  float f0 = fraction(w, true, 0.0f);
+  a = std::min(f0, f);
+  b = std::max(f0, f);
+}
+
+float fillValue(const WidgetData& w, float value) { return w.fromZero ? std::fabs(value) : value; }
+
+bool segmentLit(const WidgetData& w, bool hasValue, float value, int i, int n, float& segValue) {
+  if (!w.fromZero) {
+    // wie Pythons round(): bei .5 zur geraden Zahl
+    int lit = static_cast<int>(std::nearbyint(fraction(w, hasValue, value) * n));
+    segValue = w.min + (w.max - w.min) * (i + 1) / n;
+    return i < lit;
+  }
+  float a, b;
+  fillRange(w, hasValue, value, a, b);
+  float c = (i + 0.5f) / n;
+  float f0 = fraction(w, true, 0.0f);
+  float end = c >= f0 ? float(i + 1) / n : float(i) / n;
+  segValue = std::fabs(w.min + (w.max - w.min) * end);
+  return b > a && a <= c && c <= b;
 }
 
 bool indicatorOn(const WidgetData& w, const Values& v, uint32_t ms) {

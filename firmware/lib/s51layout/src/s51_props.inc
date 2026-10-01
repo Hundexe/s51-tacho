@@ -35,6 +35,7 @@ static void applyDefaults(WidgetData& w) {
   w.borderColor = Color{0x00, 0x00, 0x00};
   w.borderWidth = 0;
   w.image = 255;
+  w.fromZero = false;
   switch (w.type) {
     case WidgetType::Text:
       w.text = "Text";
@@ -217,6 +218,11 @@ static bool decodeProp(uint8_t code, const uint8_t* p, uint8_t len, WidgetData& 
       if (len != 1) return false;
       w.image = p[0];
       w.propsSet[0] |= (1u << 29);
+      return true;
+    case 30:  // from_zero
+      if (len != 1) return false;
+      w.fromZero = p[0] != 0;
+      w.propsSet[0] |= (1u << 30);
       return true;
     default:
       return true;

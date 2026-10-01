@@ -176,18 +176,19 @@ void Renderer::drawBar(LGFX_Sprite& g, const WidgetData& w, const Values& v) {
   Source s = w.source;
   bool has = s != Source::None && v.hasNumber(s);
   float value = has ? v.get(s) : 0;
-  float f = fraction(w, has, value);
+  float fa, fb;
+  fillRange(w, has, value, fa, fb);
   bool vertical = w.orientation == Orientation::Vertical;
   int n = w.segments;
   float x0 = w.x, y0 = w.y, x1 = w.x + w.w, y1 = w.y + w.h;
   if (n <= 0) {
     fillRoundRectF(g, x0, y0, x1, y1, w.radius, c565(w.bgColor));
-    uint16_t col = c565(thresholdColor(w, has, value, w.color));
-    if (f > 0) {
+    uint16_t col = c565(thresholdColor(w, has, fillValue(w, value), w.color));
+    if (fb > fa) {
       if (vertical) {
-        fillRoundRectF(g, x0, y0 + w.h * (1 - f), x1, y1, w.radius, col);
+        fillRoundRectF(g, x0, y0 + w.h * (1 - fb), x1, y0 + w.h * (1 - fa), w.radius, col);
       } else {
-        fillRoundRectF(g, x0, y0, x0 + w.w * f, y1, w.radius, col);
+        fillRoundRectF(g, x0 + w.w * fa, y0, x0 + w.w * fb, y1, w.radius, col);
       }
     }
     return;
@@ -195,10 +196,10 @@ void Renderer::drawBar(LGFX_Sprite& g, const WidgetData& w, const Values& v) {
   const float gap = 2;
   float length = vertical ? w.h : w.w;
   float seg = (length - gap * (n - 1)) / n;
-  int lit = rnd(f * n);
   for (int i = 0; i < n; i++) {
-    float segValue = w.min + (w.max - w.min) * (i + 1) / n;
-    Color col = i < lit ? thresholdColor(w, true, segValue, w.color) : w.bgColor;
+    float segValue;
+    bool lit = segmentLit(w, has, value, i, n, segValue);
+    Color col = lit ? thresholdColor(w, true, segValue, w.color) : w.bgColor;
     float a = i * (seg + gap);
     if (vertical) {
       fillRectF(g, x0, y1 - a - seg, x1, y1 - a, c565(col));
@@ -210,19 +211,6 @@ void Renderer::drawBar(LGFX_Sprite& g, const WidgetData& w, const Values& v) {
 
 // -- Rundinstrument ----------------------------------------------------------
 
-static void fillArcBand(LGFX_Sprite& g, float cx, float cy, float r0, float r1, float a0, float a1, uint16_t col) {
-  if (a1 - a0 <= 0.01f) return;
-  // Winkel auf 0..360 bringen, Bögen über 360° in zwei Teile zerlegen
-  while (a0 >= 360) { a0 -= 360; a1 -= 360; }
-  while (a0 < 0) { a0 += 360; a1 += 360; }
-  if (a1 > 360) {
-    g.fillArc(rnd(cx), rnd(cy), rnd(r0), rnd(r1), a0, 360, col);
-    g.fillArc(rnd(cx), rnd(cy), rnd(r0), rnd(r1), 0, a1 - 360, col);
-  } else {
-    g.fillArc(rnd(cx), rnd(cy), rnd(r0), rnd(r1), a0, a1, col);
-  }
-}
-
 void Renderer::drawGauge(LGFX_Sprite& g, const WidgetData& w, const Values& v) {
   float th = w.thickness;
   float size = std::min<float>(w.w, w.h);
@@ -230,14 +218,17 @@ void Renderer::drawGauge(LGFX_Sprite& g, const WidgetData& w, const Values& v) {
   float r = size / 2 - th / 2;
   float a0 = w.startAngle, a1 = w.endAngle;
   if (a1 < a0) std::swap(a0, a1);
-  float r0 = std::max(0.0f, r - th / 2), r1 = r + th / 2 - 1;
-  fillArcBand(g, cx, cy, r0, r1, a0, a1, c565(w.bgColor));
+  float r0 = std::max(0.0f, r - th / 2), r1 = r + th / 2;
+  Canvas565 cv = canvas(g);
+  fillArcAA(cv, cx, cy, r0, r1, a0, a1, w.bgColor);
   Source s = w.source;
   bool has = s != Source::None && v.hasNumber(s);
   float value = has ? v.get(s) : 0;
-  float f = fraction(w, has, value);
-  if (f > 0) {
-    fillArcBand(g, cx, cy, r0, r1, a0, a0 + (a1 - a0) * f, c565(thresholdColor(w, has, value, w.color)));
+  float fa, fb;
+  fillRange(w, has, value, fa, fb);
+  if (fb > fa) {
+    fillArcAA(cv, cx, cy, r0, r1, a0 + (a1 - a0) * fa, a0 + (a1 - a0) * fb,
+              thresholdColor(w, has, fillValue(w, value), w.color));
   }
 }
 

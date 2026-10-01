@@ -42,6 +42,13 @@ std::string displayText(const WidgetData& w, const Values& v);
 Color thresholdColor(const WidgetData& w, bool hasValue, float value, Color normal);
 // Anteil 0..1 für Balken und Rundinstrument
 float fraction(const WidgetData& w, bool hasValue, float value);
+// Gefüllter Bereich [a, b] als Anteile 0..1. Normal von 0 bis zum Anteil des Werts,
+// mit from_zero von der Stelle des Werts 0 bis zum Wert.
+void fillRange(const WidgetData& w, bool hasValue, float value, float& a, float& b);
+// Wert für die Warnfarben von Balken und Rundinstrument (mit from_zero der Betrag)
+float fillValue(const WidgetData& w, float value);
+// Leuchtet Segment i von n? segValue: Wert, nach dem das Segment gefärbt wird
+bool segmentLit(const WidgetData& w, bool hasValue, float value, int i, int n, float& segValue);
 // Kontrollleuchte an? ms = Laufzeit in Millisekunden (für das Blinken mit 2 Hz)
 bool indicatorOn(const WidgetData& w, const Values& v, uint32_t ms);
 

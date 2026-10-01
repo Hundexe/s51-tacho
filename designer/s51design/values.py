@@ -94,6 +94,41 @@ def fraction(widget, value):
     return max(0.0, min(1.0, (value - lo) / (hi - lo)))
 
 
+def fill_range(widget, value):
+    """Gefüllter Bereich (von, bis) als Anteile 0..1 für Balken und Rundinstrument.
+
+    Normal von 0 bis zum Anteil des Werts. Mit „Ab 0 füllen“ (from_zero) von der
+    Stelle des Werts 0 bis zum Wert, z. B. Schräglage nach links und rechts.
+    """
+    f = fraction(widget, value)
+    if not widget.get("from_zero"):
+        return 0.0, f
+    if value is None or not isinstance(value, (int, float)):
+        return 0.0, 0.0
+    f0 = fraction(widget, 0.0)
+    return min(f0, f), max(f0, f)
+
+
+def fill_value(widget, value):
+    """Wert für die Warnfarben. Mit from_zero zählt der Betrag (beide Seiten gleich)."""
+    if widget.get("from_zero") and isinstance(value, (int, float)):
+        return abs(value)
+    return value
+
+
+def segment_lit(widget, value, i, n):
+    """Leuchtet Segment i von n? Dazu der Wert, nach dem es gefärbt wird."""
+    lo, hi = widget.get("min"), widget.get("max")
+    if not widget.get("from_zero"):
+        lit = i < int(round(fraction(widget, value) * n))
+        return lit, lo + (hi - lo) * (i + 1) / n
+    a, b = fill_range(widget, value)
+    c = (i + 0.5) / n
+    f0 = fraction(widget, 0.0)
+    end = (i + 1) / n if c >= f0 else i / n          # Ende des Segments, das weiter von 0 weg liegt
+    return (b > a and a <= c <= b), abs(lo + (hi - lo) * end)
+
+
 def indicator_on(widget, values, t=None):
     src = S.SOURCE_BY_KEY.get(widget.get("source"))
     on = bool(values.get(src.key)) if src else False

@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 
 MAGIC = b"S51L"
 VERSION_MAJOR = 1
-VERSION_MINOR = 1
+VERSION_MINOR = 2
 HEADER_SIZE = 16
 DISPLAY_WIDTH = 480
 DISPLAY_HEIGHT = 320
@@ -167,6 +167,7 @@ PROPS = [
     Prop(27, "border_color", "Rahmenfarbe", "color", "#000000"),
     Prop(28, "border_width", "Rahmenbreite (px)", "u8", 0),
     Prop(29, "image", "Bild", "u8", 0xFF),
+    Prop(30, "from_zero", "Ab 0 füllen", "bool", False),
 ]
 
 
@@ -190,12 +191,14 @@ WIDGET_TYPES = [
                ("source", "color", "font", "size", "align", "decimals", "unit", "format") + THRESHOLDS,
                (160, 80), {"source": "speed", "size": 64, "font": "segment"}),
     WidgetType(3, "bar", "Balken",
-               ("source", "min", "max", "segments", "orientation", "color", "bg_color", "radius") + THRESHOLDS,
+               ("source", "min", "max", "from_zero", "segments", "orientation", "color", "bg_color", "radius")
+               + THRESHOLDS,
                (440, 20), {"source": "rpm", "max": 8000.0, "segments": 24,
                            "color": "#1D9E75", "bg_color": "#2C2C2A",
                            "warn_above": 5500.0, "crit_above": 7000.0}),
     WidgetType(4, "gauge", "Rundinstrument",
-               ("source", "min", "max", "start_angle", "end_angle", "thickness", "color", "bg_color") + THRESHOLDS,
+               ("source", "min", "max", "from_zero", "start_angle", "end_angle", "thickness", "color", "bg_color")
+               + THRESHOLDS,
                (200, 200), {"source": "speed", "max": 80.0, "color": "#1D9E75", "bg_color": "#2C2C2A"}),
     WidgetType(5, "indicator", "Kontrollleuchte",
                ("source", "icon", "on_color", "off_color", "blink"),

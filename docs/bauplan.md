@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.8, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.9, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -13,6 +13,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.6: Layouts können Bilder enthalten (z. B. ein eigenes Logo) und eine Startbild-Seite, die beim Einschalten erscheint.
 - 1.7: Firmware zeigt Layouts aus dem Designer an. Schriften sind DejaVu (frei), in die Firmware eingebaut und kantengeglättet. microSD-Karte wird ab Phase 2 gebraucht.
 - 1.8: Mehrere Designs auf der SD-Karte. Auswahl am Tacho durch langes Drücken, Standard-Design wird im Designer festgelegt.
+- 1.9: Rundinstrumente mit geglätteten Kanten. Balken und Rundinstrumente können ab 0 füllen (Schräglage nach beiden Seiten), Layout-Format 1.2.
 
 ---
 

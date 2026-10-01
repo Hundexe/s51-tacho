@@ -65,6 +65,7 @@ static void dumpWidget(const WidgetData& w) {
   std::printf(" border_color=%s\n", hex(w.borderColor).c_str());
   std::printf(" border_width=%s\n", u(w.borderWidth).c_str());
   std::printf(" image=%s\n", u(w.image).c_str());
+  std::printf(" from_zero=%s\n", w.fromZero ? "1" : "0");
 }
 
 int main(int argc, char** argv) {

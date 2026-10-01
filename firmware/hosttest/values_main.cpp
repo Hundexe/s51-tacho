@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
     for (const auto& w : s.widgets) {
       char col[8] = "-";
       std::string text = "-";
-      float frac = 0;
+      float fa = 0, fb = 0;
       int on = 0;
       bool has = w.source != s51::Source::None && s51::kindOf(w.source) == s51::SourceKind::Number &&
                  v.hasNumber(w.source);
@@ -48,8 +48,15 @@ int main(int argc, char** argv) {
           break;
         case s51::WidgetType::Bar:
         case s51::WidgetType::Gauge:
-          frac = s51::fraction(w, has, value);
-          hex(col, s51::thresholdColor(w, has, value, w.color));
+          s51::fillRange(w, has, value, fa, fb);
+          hex(col, s51::thresholdColor(w, has, s51::fillValue(w, value), w.color));
+          if (w.type == s51::WidgetType::Bar && w.segments > 0) {
+            for (int k = 0; k < w.segments; k++) {
+              float sv;
+              bool lit = s51::segmentLit(w, has, value, k, w.segments, sv);
+              text += lit ? (s51::thresholdColor(w, true, sv, w.color) == w.color ? 'n' : 'w') : '.';
+            }
+          }
           break;
         case s51::WidgetType::Indicator:
           on = s51::indicatorOn(w, v, 100) ? 1 : 0;
@@ -57,7 +64,7 @@ int main(int argc, char** argv) {
         default:
           break;
       }
-      printf("%u|%d|%s|%s|%.3f|%d\n", unsigned(s.id), i, text.c_str(), col, frac, on);
+      printf("%u|%d|%s|%s|%.3f-%.3f|%d\n", unsigned(s.id), i, text.c_str(), col, fa, fb, on);
       i++;
     }
   }

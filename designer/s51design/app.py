@@ -35,7 +35,7 @@ ZOOMS = (1.0, 1.5, 2.0, 3.0)
 # Reihenfolge und Überschriften der Eigenschaften im rechten Bereich.
 # Eigenschaften, die hier fehlen, landen unter „Weitere“.
 PROP_GROUPS = [
-    ("Daten", ("source", "decimals", "unit", "format", "min", "max")),
+    ("Daten", ("source", "decimals", "unit", "format", "min", "max", "from_zero")),
     ("Text", ("text", "font", "size", "align")),
     ("Form", ("icon", "segments", "orientation", "start_angle", "end_angle", "thickness", "radius",
               "border_width", "blink")),
@@ -46,8 +46,9 @@ PROP_GROUPS = [
 HINTS = {
     "value": "Schwellen: 0 = aus. Ab „Warnung ab“ gilt die Warnfarbe, ab „Kritisch ab“ die Kritisch-Farbe.",
     "bar": "Mit Segmenten bekommt jedes Segment die Farbe seiner Stelle, z. B. der rote Bereich am Ende "
-           "des Drehzahlbalkens.",
-    "gauge": "Winkel: 0° = rechts, im Uhrzeigersinn. 135° bis 405° ergibt einen unten offenen Dreiviertelkreis.",
+           "des Drehzahlbalkens. „Ab 0 füllen“ lässt den Balken von der 0 aus wachsen, z. B. bei −45 bis 45.",
+    "gauge": "Winkel: 0° = rechts, im Uhrzeigersinn. 135° bis 405° ergibt einen unten offenen Dreiviertelkreis. "
+             "„Ab 0 füllen“ füllt von der 0 aus nach beiden Seiten, z. B. für die Schräglage.",
     "indicator": "Blinker-Eingänge pulsieren selbst. „Blinken“ ist für Zustände gedacht, die dauerhaft an sind.",
     "image": "Der Tacho zeichnet Bilder immer in Originalgröße ab der linken oberen Ecke. „Bild laden“ "
              "verkleinert ein Bild passend auf die Größe des Rahmens.",

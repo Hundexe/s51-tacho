@@ -2,7 +2,7 @@
 
 Ein Layout beschreibt, was der Tacho anzeigt: welche Seiten es gibt und welche Elemente wo auf jeder Seite liegen. Layouts entstehen im PC-Programm [S51 Designer](../designer/README.md) und kommen über die SD-Karte oder per WLAN auf den Tacho.
 
-**Formatversion:** 1.1 (1.1 ergänzt Bilder und die Startbild-Seite)
+**Formatversion:** 1.2 (1.1 ergänzt Bilder und die Startbild-Seite, 1.2 die Eigenschaft `from_zero`)
 
 **Quellen im Code:**
 - Alle Nummern: `designer/s51design/schema.py`. Diese Datei ist die einzige Quelle. Der C++-Header der Firmware wird daraus erzeugt.
@@ -47,7 +47,7 @@ Typen in den Tabellen: `u8` = 1 Byte ohne Vorzeichen, `u16`/`i16` = 2 Bytes ohne
 |---|---|---|---|
 | 0 | 4 | Zeichen | Kennung `S51L` |
 | 4 | 1 | u8 | Hauptversion, derzeit 1 |
-| 5 | 1 | u8 | Unterversion, derzeit 1 |
+| 5 | 1 | u8 | Unterversion, derzeit 2 |
 | 6 | 2 | u16 | Größe des Kopfs in Bytes, derzeit 16. Abschnitte beginnen an diesem Versatz |
 | 8 | 2 | u16 | Displaybreite in Pixeln (480) |
 | 10 | 2 | u16 | Displayhöhe in Pixeln (320) |
@@ -235,6 +235,7 @@ Platzbedarf: Ein Vollbild 480 × 320 ohne Alpha braucht unkomprimiert 300 KB.
 | 27 | `border_color` | Rahmenfarbe | Farbe | #000000 |
 | 28 | `border_width` | Rahmenbreite in Pixeln, 0 = kein Rahmen | u8 | 0 |
 | 29 | `image` | Nummer des Bilds aus einem IMAG-Abschnitt, 255 = kein Bild | u8 | 255 |
+| 30 | `from_zero` | Balken und Rundinstrument füllen sich ab dem Wert 0 statt ab `min` (u8: 0 oder 1), z. B. für die Schräglage | u8 | 0 |
 
 ### 4.4 Abweichende Standardwerte je Typ
 
@@ -254,7 +255,7 @@ Fehlt eine Eigenschaft in der Datei, gelten für diese Typen andere Standardwert
 
 **Symbole (`icon`):** 0 `none` kein Symbol, 1 `arrow_left` Pfeil links, 2 `arrow_right` Pfeil rechts, 3 `high_beam` Fernlicht, 4 `neutral` Leerlauf (N), 5 `light` Licht, 6 `battery` Batterie, 7 `temp` Thermometer, 8 `gps` GPS, 9 `bluetooth` Bluetooth, 10 `lock` Schloss, 11 `warning` Warndreieck, 12 `music` Musik.
 
-**Schrift (`font`):** 0 `sans` normal, 1 `sans_bold` fett, 2 `segment` 7-Segment (nur Ziffern, Punkt, Komma, Minus, Doppelpunkt und Leerzeichen; andere Zeichen fallen auf `sans_bold` zurück).
+**Schrift (`font`):** 0 `sans` normal (DejaVu Sans), 1 `sans_bold` fett (DejaVu Sans Bold), 2 `segment` Ziffernschrift mit fester Zeichenbreite (DejaVu Sans Mono Bold), gut für Werte, deren Breite sich nicht ändern soll.
 
 **Ausrichtung (`align`):** 0 `left`, 1 `center`, 2 `right`.
 
@@ -281,7 +282,9 @@ Diese Regeln gelten für den Tacho und für die Vorschau im Designer (`designer/
 - Ohne Segmente wird der Hintergrund in `bg_color` gezeichnet und darüber der gefüllte Teil in der Farbe nach den Warnregeln.
 - Mit Segmenten: Abstand 2 Pixel. Es leuchten round(Anteil × Segmente) Segmente. Jedes leuchtende Segment bekommt die Farbe nach den Warnregeln für den Wert an seinem Ende, also `min + (max − min) × (i + 1) / Segmente`. So entsteht z. B. der rote Bereich am Ende des Drehzahlbalkens. Nicht leuchtende Segmente sind `bg_color`.
 
-**Rundinstrument:** Ein Bogen um die Mitte des Rahmens. Durchmesser = kleinere Seite des Rahmens, Bogen mittig auf diesem Kreis mit `thickness` Dicke. Winkel: 0° = rechts (3 Uhr), positive Winkel **im Uhrzeigersinn**. Der ganze Bogen von `start_angle` bis `end_angle` wird in `bg_color` gezeichnet, darüber der Anteil des Werts in der Farbe nach den Warnregeln. 135° bis 405° ergibt einen unten offenen Dreiviertelkreis.
+**Rundinstrument:** Ein Bogen um die Mitte des Rahmens. Durchmesser = kleinere Seite des Rahmens, Bogen mittig auf diesem Kreis mit `thickness` Dicke. Winkel: 0° = rechts (3 Uhr), positive Winkel **im Uhrzeigersinn**. Der ganze Bogen von `start_angle` bis `end_angle` wird in `bg_color` gezeichnet, darüber der Anteil des Werts in der Farbe nach den Warnregeln. 135° bis 405° ergibt einen unten offenen Dreiviertelkreis. Die Kanten werden geglättet, die Enden des Bogens sind gerade.
+
+**Ab 0 füllen (`from_zero`):** Für Werte, die links und rechts von 0 liegen, z. B. die Schräglage von −45 bis 45. Gefüllt wird der Bereich zwischen dem Anteil des Werts 0 und dem Anteil des Werts. Mit Segmenten leuchtet ein Segment, wenn seine Mitte (`(i + 0,5) / Segmente`) in diesem Bereich liegt; gefärbt wird es nach dem Wert an seinem Ende, das weiter von 0 entfernt ist. Die Warnregeln gelten für den Betrag des Werts, also auf beiden Seiten gleich. Ohne `from_zero` gilt die Regel oben (gefüllt ab `min`).
 
 **Kontrollleuchte:** Das Symbol füllt den Rahmen (kleinere Seite). Ist die Quelle „an“, wird `on_color` benutzt, sonst `off_color`. Mit `blink` wechselt ein eingeschaltetes Symbol im Takt von 2 Hz zwischen an und aus. Blinker-Eingänge pulsieren schon selbst und brauchen `blink` nicht.
 
