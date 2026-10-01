@@ -2,7 +2,9 @@
 
 PC-Programm zum Gestalten der Tacho-Anzeige. Elemente wie Geschwindigkeit, Drehzahlbalken, Kontrollleuchten oder Texte lassen sich frei auf dem 480 × 320 Pixel großen Display verteilen. Das Ergebnis kommt per SD-Karte oder WLAN auf den Tacho.
 
-Läuft unter Windows, macOS und Linux. Braucht nur Python, keine Zusatzpakete.
+Läuft unter Windows, macOS und Linux. Braucht nur Python. Optional Pillow (`pip install pillow`), damit sich auch JPG- und BMP-Bilder laden lassen. Ohne Pillow gehen nur PNG-Bilder. In der fertigen exe ist Pillow enthalten.
+
+![S51 Designer](../docs/bilder/designer/designer-start.png)
 
 ## Installieren und starten
 
@@ -33,11 +35,15 @@ Selbst bauen: Doppelklick auf `designer/build_exe.bat`. Das lädt PyInstaller un
 
 | Bereich | Funktion |
 |---|---|
-| Links oben | **Seiten:** anlegen, kopieren, löschen, Reihenfolge ändern |
-| Links Mitte | **Element hinzufügen:** Text, Wert, Balken, Rundinstrument, Kontrollleuchte, Fläche/Linie |
-| Links unten | Alle Elemente der Seite, zum Auswählen auch verdeckter Elemente |
-| Mitte | Display in Originalgröße × Zoom. Element anklicken und ziehen, Punkt unten rechts ändert die Größe |
-| Rechts | **Eigenschaften** des gewählten Elements, ohne Auswahl die Eigenschaften der Seite |
+| Oben | **Symbolleiste:** Neu, Öffnen, Speichern, Rückgängig, Wiederholen, Element duplizieren, löschen, ganz nach vorn oder hinten, Bild laden, Tacho-Konfiguration. Rechts **Auf SD-Karte** und **Drahtlos senden**. Jedes Symbol erklärt sich beim Darüberfahren mit der Maus |
+| Links oben | **Elemente:** Kachel anklicken fügt Text, Wert, Balken, Rundinstrument, Kontrollleuchte, Fläche/Linie oder Bild in der Mitte ein |
+| Links Mitte | **Seiten:** anlegen (+), kopieren, löschen, Reihenfolge ändern |
+| Links unten | **Ebenen:** alle Elemente der Seite, das vorderste oben. Zum Auswählen auch verdeckter Elemente |
+| Mitte | Display mit Rahmen. Element anklicken und ziehen, Punkt unten rechts ändert die Größe. Darunter Zoom (1×, 1,5×, 2×, 3×) und die Schalter Raster, Einrasten, Vorschau, Demo-Werte |
+| Rechts | **Eigenschaften** des gewählten Elements, nach Gruppen (Daten, Text, Form, Farben, Warnschwellen). Ohne Auswahl: Seite, Layout und die Bilder im Layout |
+| Unten | Status und Dateigröße des Layouts (höchstens 1 MiB) |
+
+Farben: auf das Farbfeld klicken öffnet die Farbauswahl. Daneben lässt sich der Wert als `#RRGGBB` eintippen.
 
 Tastatur (wenn das Display angeklickt ist):
 
@@ -50,11 +56,23 @@ Tastatur (wenn das Display angeklickt ist):
 | Strg+S / Strg+O | Speichern / Öffnen |
 
 Weitere Hinweise:
-- **Am Raster ausrichten** rastet Position und Größe auf 4 Pixel ein.
-- **Vorschau wie am Tacho** blendet Auswahl, Raster und versteckte Elemente aus.
-- **Demo-Werte bewegen** lässt Geschwindigkeit, Drehzahl, Blinker usw. laufen, damit Warnfarben und Balken sichtbar werden.
-- **Nachtversion:** Seite anlegen, rechts „Art“ auf „Nachtversion einer Seite“ stellen und die Tagseite wählen. Im Nachtmodus zeigt der Tacho dann diese Seite.
+- **Einrasten** rastet Position und Größe auf 4 Pixel ein.
+- **Vorschau** blendet Auswahl, Raster und versteckte Elemente aus, so wie am Tacho.
+- **Demo-Werte** lässt Geschwindigkeit, Drehzahl, Blinker usw. laufen, damit Warnfarben und Balken sichtbar werden.
+- **Versteckt** und **Gesperrt** (in den Eigenschaften): versteckte Elemente zeigt nur der Designer blass an, gesperrte lassen sich nicht aus Versehen verschieben.
+- **Nachtversion:** Seite anlegen, rechts „Art“ auf „Nachtversion“ stellen und unter „Nacht für“ die Tagseite wählen. Im Nachtmodus zeigt der Tacho dann diese Seite.
 - Die Vorschau zeigt Positionen, Größen, Farben und Werte genau. Die Schriften am PC sehen etwas anders aus als auf dem Tacho.
+
+### Bilder und Startbild
+
+- **Bild laden** (Symbolleiste, Menü Bearbeiten oder rechts bei den Eigenschaften) liest PNG, JPG oder BMP. Ohne ausgewähltes Bild-Element entsteht ein neues Element in der Mitte. Bilder größer als das Display werden verkleinert. Ist ein Bild-Element ausgewählt, wird das neue Bild genau in dessen Rahmen eingepasst.
+- Ein Bild kann von mehreren Elementen benutzt werden. Auswahl im Feld „Bild“ des Elements. **Originalgröße** setzt den Rahmen auf die Größe des Bildes.
+- Der Tacho zeichnet Bilder immer in Originalgröße ab der linken oberen Ecke des Rahmens. Durchsichtige Stellen (PNG mit Alpha) bleiben durchsichtig.
+- Höchstens 32 Bilder pro Layout, jedes höchstens 480 × 480 Pixel. Gespeichert werden sie mit 65 536 Farben (RGB565), einfarbige Flächen werden komprimiert. Große Fotos machen die Datei schnell groß, die Größe steht unten rechts.
+- Ohne Auswahl stehen rechts alle Bilder des Layouts mit Vorschau und wie oft sie benutzt werden. Dort lassen sie sich auch löschen.
+- **Startbild:** Eine Seite auf die Art „Startbild“ stellen. Diese Seite zeigt der Tacho beim Einschalten, so lange wie in der Konfiguration unter `anzeige.startbild_dauer_s` eingestellt. Ein Layout hat höchstens eine Startbild-Seite.
+
+![Startbild-Seite mit Logo](../docs/bilder/designer/designer-bild.png)
 
 ## Vorlagen
 
@@ -62,12 +80,12 @@ Sechs Layouts sind eingebaut (Datei → Neu aus Vorlage) und liegen auch als Dat
 
 | Vorlage | Inhalt |
 |---|---|
-| **Klar** | Standard-Layout des Tachos: große Geschwindigkeit, Drehzahlbalken, Infozeile, Statistikseite, Nachtversion |
+| **Klar** | Standard-Layout des Tachos: große Geschwindigkeit, Drehzahlbalken, Infozeile, Statistikseite, Nachtversion, Startbild mit Logo |
 | **Retro** | Rundinstrument im Stil des alten Simson-Tachos mit Skala, Kilometerzähler und kleinem Drehzahlmesser |
 | **Rennsport** | Riesige Ganganzeige, segmentierter Drehzahlbalken mit rotem Bereich, Schaltblitz, Seite für die Schräglage |
 | **Cockpit** | Viele Werte in Kacheln, Drehzahl als Ring, dazu eine Musikseite mit Songtitel vom iPhone |
 | **Minimal** | Nur Geschwindigkeit, Uhrzeit, Blinker und Warnsymbol, mit gedimmter Nachtversion |
-| **Alle Elemente** | Eine Seite je Element-Typ: Schriften und Ausrichtung, Balkenarten, Rundinstrumente mit verschiedenen Winkeln, alle Symbole, Flächen und Linien, versteckte und gesperrte Elemente, Nachtversion |
+| **Alle Elemente** | Eine Seite je Element-Typ: Schriften und Ausrichtung, Balkenarten, Rundinstrumente mit verschiedenen Winkeln, alle Symbole, Flächen und Linien, versteckte und gesperrte Elemente, Nachtversion, Bilder, Startbild |
 
 ![Klar](../docs/bilder/vorlage-klar.png)
 ![Retro](../docs/bilder/vorlage-retro.png)
@@ -121,11 +139,16 @@ python -m s51design.cli config-new tacho.cfg        # Vorlage mit allen Einträg
 | `s51design/editor.py` | Bearbeitungslogik ohne Oberfläche (Auswahl, Ziehen, Rückgängig) |
 | `s51design/values.py` | Demo-Werte und Anzeigeregeln (Zahlenformat, Warnfarben) |
 | `s51design/render.py` | Zeichnen der Vorschau |
+| `s51design/images.py` | Bilder: Umrechnung nach RGB565, Komprimierung, Größe ändern, PNG lesen und schreiben, mitgeliefertes Logo |
 | `s51design/app.py` | Oberfläche |
+| `s51design/theme.py` | Farben, Schriften und Aussehen der Oberfläche |
+| `s51design/icons.py` | Symbole als eingebettete PNG-Daten (erzeugt von `tools/make_icons.py`) |
 | `s51design/presets.py` | Mitgelieferte Layouts |
 | `tools/gen_cpp_header.py` | Erzeugt den C++-Teil des Schemas für die Firmware |
 | `tools/preview_png.py` | Vorschaubilder von Layouts als PNG, ohne Fenster (braucht Pillow) |
 | `tools/make_examples.py` | Schreibt alle Vorlagen nach `beispiele/` und ihre Bilder nach `docs/bilder/` |
+| `tools/make_icons.py` | Zeichnet die Symbole der Oberfläche neu (braucht Pillow) |
+| `tools/screenshots.py` | Bildschirmfotos der Oberfläche nach `docs/bilder/designer/` (Linux mit Xvfb und ImageMagick) |
 
 ## Tests
 
@@ -143,4 +166,4 @@ Die Tests prüfen:
 - dass die Doku alle Nummern und Schlüssel enthält
 - die Logik der Oberfläche mit nachgebildetem Tkinter (ohne echtes Fenster)
 
-Was die Tests **nicht** abdecken: wie die Oberfläche tatsächlich auf dem Bildschirm aussieht. Das muss am PC von Hand geprüft werden.
+Was die Tests **nicht** abdecken: wie die Oberfläche tatsächlich aussieht. Dafür macht `.github/workflows/designer-screenshots.yml` auf GitHub Bildschirmfotos des laufenden Programms unter Linux (Actions → „Designer-Bildschirmfotos“ → Run workflow). Unter Windows und macOS sehen Schriften und Abstände etwas anders aus.

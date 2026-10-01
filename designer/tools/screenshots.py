@@ -68,7 +68,7 @@ def main():
 
     app.ed.new("Alle Elemente")
     app.refresh_all()
-    app.zoom.set(1)
+    app.zoom.set(1.0)
     app._zoom_changed()
     for i, s in enumerate(app.ed.layout.screens):
         app.ed.select_screen(i)
@@ -76,7 +76,7 @@ def main():
         shot(root, out_dir, f"designer-alle-{i + 1}.png")
 
     app.ed.new("Klar")
-    app.zoom.set(2)
+    app.zoom.set(2.0)
     app.preview.set(True)
     app.refresh_all()
     shot(root, out_dir, "designer-vorschau.png")

@@ -1,3 +1,3 @@
 """S51 Designer: Layouts und Einstellungen für den S51-Tacho."""
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"

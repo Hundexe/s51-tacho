@@ -122,7 +122,7 @@ class App:
         self.cfg_loaded = False        # aus Datei geladen oder im Dialog bearbeitet
         self.settings = load_settings()
         zoom = self.settings.get("zoom", 1.5)
-        self.zoom = tk.DoubleVar(value=zoom if zoom in ZOOMS else 1.5)
+        self.zoom = tk.DoubleVar(value=float(zoom) if zoom in ZOOMS else 1.5)   # float, passend zu den Zoom-Knöpfen
         self.show_grid = tk.BooleanVar(value=True)
         self.snap = tk.BooleanVar(value=True)
         self.preview = tk.BooleanVar(value=False)
@@ -911,7 +911,7 @@ class App:
         if not path:
             return False
         try:
-            width, height, rgba = I.load_rgba(path)
+            width, height, rgba = I.load_rgba(path, max_side=S.MAX_IMAGE_SIDE)
         except Exception as e:  # noqa: BLE001 – Pillow und der PNG-Leser melden viele Fehlerarten
             messagebox.showerror(APP_NAME, f"Bild kann nicht gelesen werden:\n{e}")
             return False

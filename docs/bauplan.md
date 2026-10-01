@@ -1,4 +1,4 @@
-# Bauplan S51-Digitaltacho (Version 1.5, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.6, Stand 01.10.2026)
 
 Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
 
@@ -10,6 +10,7 @@ Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckli
 - 1.3: Für den Nachbau umgeschrieben, Stückliste in eigene Datei ausgelagert.
 - 1.4: Günstiger: Kopftemperatur mit PT1000 am ADS1115 statt Thermoelement und MCP9600. Uhr-Modul entfällt, Uhrzeit kommt von GPS und iPhone. GPS-Modul mit u-blox M8 oder M10. Lagesensor MPU6050 statt LSM6DS3 (günstiger, die Adresse ist ohne Uhr-Modul frei).
 - 1.5: Anzeige frei gestaltbar mit dem PC-Programm S51 Designer. Layout-Datei (.s51) und Konfiguration (tacho.cfg) kommen per SD-Karte oder WLAN auf den Tacho.
+- 1.6: Layouts können Bilder enthalten (z. B. ein eigenes Logo) und eine Startbild-Seite, die beim Einschalten erscheint.
 
 ---
 
@@ -185,7 +186,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 ## 6. Software
 
 - **Basis:** PlatformIO mit Arduino-Framework, LovyanGFX als Display-Treiber.
-- **Anzeige frei gestaltbar:** Die Fahrseiten entstehen am PC im [S51 Designer](../designer/README.md). Elemente wie Werte, Balken, Rundinstrumente und Kontrollleuchten lassen sich frei platzieren. Der Tacho zeichnet die Seiten aus der Layout-Datei ([dateiformat-layout.md](dateiformat-layout.md)). Menüs (Einstellungen, PIN-Eingabe, Alarm, Übertragung) sind fest eingebaut.
+- **Anzeige frei gestaltbar:** Die Fahrseiten entstehen am PC im [S51 Designer](../designer/README.md). Elemente wie Werte, Balken, Rundinstrumente, Kontrollleuchten und Bilder lassen sich frei platzieren. Der Tacho zeichnet die Seiten aus der Layout-Datei ([dateiformat-layout.md](dateiformat-layout.md)). Menüs (Einstellungen, PIN-Eingabe, Alarm, Übertragung) sind fest eingebaut.
 - **Einstellungen** stehen in der Textdatei `tacho.cfg` ([konfiguration.md](konfiguration.md)). PIN und NFC-Tags liegen nur im internen Speicher.
 - **Übertragung:** Layout und Einstellungen per SD-Karte (Ordner `s51`) oder per WLAN vom Designer ([uebertragung.md](uebertragung.md)).
 - **Startmodus:** Zuerst wird geprüft, warum der Tacho an ist. Zündung → Entsperren oder Fahransicht. Keine Zündung → Alarmprüfung ohne Display.
@@ -193,7 +194,8 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - **Speicher:** 16 MB Flash mit zwei App-Bereichen für Updates per WLAN, dazu Dateisystem für Einstellungen.
 - **Uhrzeit:** Es gibt kein eigenes Uhr-Modul. Die Zeit kommt vom GPS, sobald es Satelliten empfängt, oder vom iPhone, sobald es per Bluetooth verbunden ist (iOS stellt die Uhrzeit für verbundene Geräte bereit). Bis dahin zeigt die Uhr „--:--“.
 - **Kilometerstand:** im NVS mit Verschleißausgleich, alle 100 m und beim Abschalten.
-- **Seiten aus dem Layout:** Das mitgelieferte Layout „Klar“ hat die Seiten Fahrt, Statistik und eine Nachtversion der Fahrseite. Beliebige weitere Seiten lassen sich im Designer anlegen.
+- **Seiten aus dem Layout:** Das mitgelieferte Layout „Klar“ hat die Seiten Fahrt, Statistik, eine Nachtversion der Fahrseite und ein Startbild mit Logo. Beliebige weitere Seiten lassen sich im Designer anlegen.
+- **Startbild:** Hat das Layout eine Startbild-Seite, zeigt der Tacho sie beim Einschalten für `anzeige.startbild_dauer_s` Sekunden. Sonst erscheint `anzeige.startbild_text`.
 - **Fest eingebaute Menüs:**
   - Wartung: Erinnerungen bestätigen
   - Alarm: scharf/aus, PIN ändern, NFC-Tag anlernen, Protokoll

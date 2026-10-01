@@ -24,7 +24,7 @@ Referenzfahrzeug: Simson S51B mit VAPE-Zündung (12 V) und Batterie.
 | Phase | Inhalt | Status |
 |---|---|---|
 | 1 | Display-Test mit Demo-Daten | Code vorhanden, **noch nicht auf Hardware getestet** |
-| 2 | Oberfläche | Designer, Dateiformate und Decoder fertig und am PC getestet. Die Designer-Oberfläche ist noch nicht auf einem echten Bildschirm geprüft. Anzeige auf dem Tacho offen |
+| 2 | Oberfläche | Designer (mit Bildern und Startbild), Dateiformate und Decoder fertig und am PC getestet. Die Oberfläche ist per automatischem Bildschirmfoto unter Linux geprüft, unter Windows noch nicht von Hand. Anzeige auf dem Tacho offen |
 | 3 | I²C-Module | offen |
 | 4 | GPS und Drehzahl | offen |
 | 5 | Stromversorgung und Alarm | offen |
@@ -58,7 +58,7 @@ Voraussetzung: [VS Code](https://code.visualstudio.com/) mit der Erweiterung **P
 
 ### Anzeige gestalten
 
-Mit dem [S51 Designer](designer/README.md) am PC (Python, keine Zusatzpakete). Formate und Übertragung:
+Mit dem [S51 Designer](designer/README.md) am PC (Python, Pillow optional für JPG/BMP). Formate und Übertragung:
 - [docs/dateiformat-layout.md](docs/dateiformat-layout.md): Layout-Datei `.s51`
 - [docs/konfiguration.md](docs/konfiguration.md): Einstellungen `tacho.cfg`
 - [docs/uebertragung.md](docs/uebertragung.md): Übertragung per WLAN

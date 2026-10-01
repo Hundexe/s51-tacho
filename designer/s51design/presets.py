@@ -23,9 +23,9 @@ def _w(type_key, x, y, w, h, **props):
     return wd
 
 
-def _logo(img_id=0, size=128, ring=(29, 158, 117)):
+def _logo(img_id=0, size=128, ring=(29, 158, 117), name="Logo"):
     w, h, rgba = I.make_logo(size, ring=ring)
-    return I.from_rgba(img_id, "Logo", w, h, rgba)
+    return I.from_rgba(img_id, name, w, h, rgba)
 
 
 def _startup(sid, logo, title="S51", subtitle="Digitaltacho", color=TEXT, sub_color=DIM, bg="#000000"):
@@ -377,7 +377,9 @@ def alle_elemente():
            size=16, color="#8A2E24"),
         _w("value", 140, 190, 200, 80, source="speed", font="segment", size=72, color="#B03A2E"),
     ])
-    gross, klein, amber = _logo(0, 128), _logo(1, 64), _logo(2, 64, ring=(239, 159, 39))
+    gross = _logo(0, 128, name="Logo groß")
+    klein = _logo(1, 64, name="Logo klein")
+    amber = _logo(2, 64, ring=(239, 159, 39), name="Logo orange")
     bilder = Screen(6, "Bilder", widgets=[
         _label(12, 8, 456, "Bilder", 20, TEXT, h=28),
         _w("image", 24, 56, 128, 128, image=0),

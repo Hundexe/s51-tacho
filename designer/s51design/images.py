@@ -306,8 +306,10 @@ def png_decode(data):
     return width, height, bytes(out)
 
 
-def load_rgba(path):
-    """Bilddatei -> (Breite, Höhe, RGBA). Nutzt Pillow, wenn vorhanden, sonst nur PNG."""
+def load_rgba(path, max_side=None):
+    """Bilddatei -> (Breite, Höhe, RGBA). Nutzt Pillow, wenn vorhanden, sonst nur PNG.
+    Mit max_side verkleinert Pillow sehr große Bilder (z. B. Handyfotos) schon beim Laden
+    auf höchstens die doppelte Kantenlänge, damit das Weiterrechnen schnell bleibt."""
     try:
         from PIL import Image as PILImage
     except ImportError:
@@ -315,6 +317,8 @@ def load_rgba(path):
     if PILImage is not None:
         with PILImage.open(path) as im:
             im = im.convert("RGBA")
+            if max_side and max(im.width, im.height) > 2 * max_side:
+                im.thumbnail((2 * max_side, 2 * max_side), PILImage.BOX)
             return im.width, im.height, im.tobytes()
     with open(path, "rb") as f:
         return png_decode(f.read())
