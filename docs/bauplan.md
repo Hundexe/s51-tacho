@@ -1,10 +1,13 @@
-# Bauplan S51-Digitaltacho (Version 1.2, Stand 01.10.2026)
+# Bauplan S51-Digitaltacho (Version 1.3, Stand 01.10.2026)
 
-Simson S51B, VAPE 12 V mit Batterie, WT32-SC01 Plus (ESP32-S3, 3,5" 480×320, Touch). Handy: iPhone.
+Dieses Dokument beschreibt, was gebaut wird und warum. Teile stehen in [stueckliste.md](stueckliste.md), die Pins im Code in `firmware/include/pins.h`.
+
+**Referenzfahrzeug:** Simson S51B mit VAPE-Zündung (12 V) und Batterie. Andere S51/S50 mit 12-V-Bordnetz sollten ohne Änderungen passen. Bei 6 V muss die Stromversorgung angepasst werden (Abschnitt 4).
 
 **Änderungen**
 - 1.1: Dauerplus mit Wächterschaltung, im Stand bleibt nur die Bewegungserkennung wach.
-- 1.2: Alarm gibt einen Ton aus. Entschärfen mit Zündschlüssel, PIN oder NFC-Tag. iPhone festgelegt.
+- 1.2: Alarm gibt einen Ton aus. Entschärfen mit Zündschlüssel, PIN oder NFC-Tag.
+- 1.3: Für den Nachbau umgeschrieben, Stückliste in eigene Datei ausgelagert.
 
 ---
 
@@ -21,7 +24,7 @@ Simson S51B, VAPE 12 V mit Batterie, WT32-SC01 Plus (ESP32-S3, 3,5" 480×320, To
 | Strom | Dauerplus. Im Stand alles stromlos, nur ein passiver Erschütterungsschalter bleibt wach |
 | Alarm | Bewegung weckt den Tacho, Lagesensor bestätigt, dann Alarmton über Lautsprecher in der Lampe |
 | Entschärfen | Zündschlüssel, PIN (Touch oder Lenkertaster) oder NFC-Tag, Sicherheitsstufe einstellbar |
-| Handy | iPhone: Musiksteuerung und Songtitel über Bluetooth |
+| Handy | Musiksteuerung über Bluetooth (iPhone und Android). Songtitel ohne Zusatz-App nur mit iPhone |
 | Gehäuse | ASA, wasserdichte Stecker, Belüftungsmembran |
 
 ---
@@ -85,7 +88,7 @@ Die komplette Belegung steht im Code in `firmware/include/pins.h`.
   - Taster 2 und 3: Play/Pause und nächster Titel.
   - Alle drei zusammen: PIN-Eingabe (siehe 4.4).
 - **Musiksteuerung:** Der ESP32-S3 meldet sich per Bluetooth LE beim iPhone als Medien-Fernbedienung an.
-- **Songtitel:** Das iPhone stellt Titel und Interpret über seine Medien-Schnittstelle (Apple Media Service) bereit. Der Tacho kann sie anzeigen, ohne dass du eine App brauchst.
+- **Songtitel:** Das iPhone stellt Titel und Interpret über seine Medien-Schnittstelle (Apple Media Service) bereit. Der Tacho kann sie anzeigen, ohne Zusatz-App. Android bietet diese Schnittstelle nicht, dort bräuchte es eine Begleit-App.
 
 ---
 
@@ -134,7 +137,7 @@ Batterie +12 V (Dauerplus)
 | 1 Komfort | entschärft sofort | nicht nötig |
 | 2 Sicher (Vorschlag) | startet den Tacho, Sperrbildschirm erscheint | innerhalb von 30 s PIN oder NFC-Tag, sonst Alarm |
 
-Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt deine PIN nicht und hat deinen Tag nicht.
+Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt die PIN nicht und hat den Tag nicht.
 
 **Entsperr-Wege**
 - **PIN am Display:** Ziffernblock auf dem Touchscreen, 4–6 Stellen.
@@ -169,7 +172,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - **Fenster:** für den Lichtsensor neben dem Display.
 - **Material:** ASA, Wandstärke ≥ 3 mm, 4–5 Perimeter.
 
-**Was ich brauche:** Fotos der Lampe von hinten und von der Seite, Fotos der Halterung an der Gabel, Abstand der Befestigungspunkte, Tiefe des Einsatzes, und ob in der Lampe Kabelverbindungen sitzen.
+**Noch zu erfassen, bevor die Schale konstruiert wird:** Fotos der Lampe von hinten und von der Seite, Fotos der Halterung an der Gabel, Abstand der Befestigungspunkte, Tiefe des Einsatzes, und ob in der Lampe Kabelverbindungen sitzen.
 
 ---
 
@@ -193,28 +196,9 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 
 ---
 
-## 7. Einkaufsliste
+## 7. Teile
 
-- [ ] Step-down 12→5 V (Eingang ≥ 36 V, ≥ 1 A), z. B. Pololu D36V28F5
-- [ ] Flachsicherung 2 A + Halter, TVS-Diode SMBJ18A, P-MOSFET ≥ 30 V, Kleinteile für Selbsthaltung
-- [ ] Passive Erschütterungsschalter (z. B. SW-18010P), ein paar zum Testen
-- [ ] Wasserfester Lautsprecher 4 Ω, ca. 40–50 mm, 2–3 W
-- [ ] Optokoppler-Platine 4- oder 8-Kanal, 12 V (PC817)
-- [ ] MCP23017-Modul
-- [ ] ADS1115-Modul
-- [ ] MCP9600-Modul + Thermoelement-Ring Typ K, 14 mm
-- [ ] DS3231-Modul + CR2032 (Lade-Diode bzw. -Widerstand auslöten)
-- [ ] LSM6DS3-Modul
-- [ ] BME280-Modul
-- [ ] BH1750-Modul
-- [ ] GPS-Modul u-blox M10 mit Antenne
-- [ ] 74LVC1G17 (Schmitt-Trigger), Dioden, Widerstände, Kondensatoren
-- [ ] 3× Taster IP67, Ø 12 mm
-- [ ] 2 wasserdichte Steckverbinder (8–12-polig) + 1 Kabelverschraubung
-- [ ] Belüftungsmembran
-- [ ] Lochrasterplatine
-- [ ] Optional: PN532-NFC-Modul + NFC-Tag (NTAG215 o. ä.)
-- [ ] Optional später: NJK-5002C Hall-Sensor + 2 Neodym-Magnete
+Alle Teile mit Menge, Zweck und Hinweisen stehen in [stueckliste.md](stueckliste.md).
 
 ---
 
@@ -237,7 +221,7 @@ Warum Stufe 2: Das Zündschloss lässt sich kurzschließen. Wer das tut, kennt d
 - [ ] Sicherheitsstufe 1 oder 2 als Standard?
 - [ ] Hall gleich mit einbauen oder erst nur GPS?
 
-## Eigene Ideen aus dem Planer
+## Herkunft einzelner Entscheidungen
 - I²C-Erweiterung bei Pin-Mangel → umgesetzt (MCP23017 + ADS1115)
 - Spotify-Bedienelement → Tasterpod mit 3 Tastern, Musiksteuerung über Bluetooth
 - Dauerstrom mit Bewegungsalarm → Wächterschaltung (4.1)

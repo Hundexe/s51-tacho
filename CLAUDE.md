@@ -1,0 +1,29 @@
+# Hinweise für die Arbeit an diesem Repo
+
+## Grundregel: nachbaubar nur aus dem Repo
+
+Jemand ohne Vorwissen und ohne Zugang zu Chats, Notizen oder anderen Quellen muss das Projekt allein mit diesem Repo nachbauen können. Daraus folgt:
+
+- Jede Entscheidung, jedes Maß und jede Pinbelegung steht im Repo, nicht nur im Gespräch.
+- Wer Hardware ändert, aktualisiert im selben Commit `docs/stueckliste.md`, `docs/bauplan.md` und die Schaltpläne in `hardware/`.
+- Wer Pins ändert, ändert sie nur in `firmware/include/pins.h` und passt `docs/bauplan.md` Abschnitt 2 an.
+- Software-Abhängigkeiten sind in `firmware/platformio.ini` auf exakte Versionen gepinnt.
+- CAD-Dateien liegen als Quelle (bearbeitbar) und als STL/STEP in `cad/`, mit Druckeinstellungen in einer README daneben.
+- Die Statustabelle in `README.md` sagt ehrlich, was getestet ist und was nicht. Ungetestetes wird als ungetestet markiert.
+- Keine persönlichen Bezüge in der Doku („du“, „deine Lampe“). Die Doku richtet sich an jeden, der nachbaut.
+
+## Sprache und Stil
+
+- Doku, Kommentare und Commit-Nachrichten auf Deutsch.
+- Code-Bezeichner auf Englisch, außer bei fahrzeugspezifischen Begriffen (Blinker, Leerlauf, Zündung).
+
+## Aufbau
+
+| Pfad | Inhalt |
+|---|---|
+| `docs/bauplan.md` | Was gebaut wird und warum, Ablauf, Phasen |
+| `docs/stueckliste.md` | Alle Teile mit Menge, Zweck, Phase |
+| `docs/datenblaetter/` | Datenblätter der Hauptteile |
+| `firmware/` | PlatformIO-Projekt |
+| `hardware/` | Schaltpläne und Verdrahtung |
+| `cad/` | Gehäuse und Halter |
